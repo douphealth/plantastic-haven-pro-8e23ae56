@@ -1,26 +1,27 @@
 import { Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const freeTier = [
-  "10 AI plant scans/month",
-  "5 plants on your shelf",
-  "Basic watering reminders",
+  "5 AI plant scans/month",
+  "15 plants on your shelf",
+  "Smart watering reminders",
+  "Basic care calendar",
   "Learning Hub access",
-  "Basic garden journal",
-  "Community forum (read + 3 posts/mo)",
+  "Community forum (read + 5 posts/mo)",
 ];
 
 const proTier = [
   "Unlimited AI scans & diagnostics",
   "Unlimited plants",
-  "Hyper-personalized care engine",
-  "AR Garden Designer",
-  "Advanced analytics & reports",
-  "Masterclass video library",
-  "Pro marketplace discounts (10-25%)",
-  "Expert consultations (3/mo)",
-  "Web dashboard access",
-  "Team collaboration tools",
+  "Disease & pest AI diagnosis",
+  "Advanced analytics dashboard",
+  "Growth trend charts",
+  "Garden space planner",
+  "Premium themes & customization",
+  "Ad-free experience",
+  "Export plant cards (no watermark)",
+  "Priority community support",
 ];
 
 const PricingSection = () => {
@@ -58,9 +59,11 @@ const PricingSection = () => {
                 </li>
               ))}
             </ul>
-            <Button variant="heroOutline" className="w-full h-12 rounded-xl">
-              Get Started Free
-            </Button>
+            <Link to="/register">
+              <Button variant="heroOutline" className="w-full h-12 rounded-xl">
+                Get Started Free
+              </Button>
+            </Link>
           </div>
 
           {/* Pro */}
@@ -74,9 +77,9 @@ const PricingSection = () => {
               <p className="text-primary-foreground/70 text-sm mt-1">For serious plant enthusiasts</p>
             </div>
             <div className="mb-8">
-              <span className="font-heading text-5xl font-bold">$99</span>
-              <span className="text-primary-foreground/70 ml-2">/year</span>
-              <div className="text-sm text-primary-foreground/60 mt-1">$900+ value — save 88%</div>
+              <span className="font-heading text-5xl font-bold">$7.99</span>
+              <span className="text-primary-foreground/70 ml-2">one-time</span>
+              <div className="text-sm text-primary-foreground/60 mt-1">$200+ value — unlock everything</div>
             </div>
             <ul className="space-y-3 flex-1 mb-8">
               {proTier.map((item) => (
@@ -87,8 +90,25 @@ const PricingSection = () => {
               ))}
             </ul>
             <Button variant="gold" className="w-full h-12 rounded-xl text-base">
-              Upgrade to Pro
+              Upgrade to Pro — $7.99
             </Button>
+            <p className="text-center text-xs text-primary-foreground/50 mt-3">One-time payment. No subscriptions.</p>
+          </div>
+        </div>
+
+        {/* Bumps preview */}
+        <div className="max-w-4xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-xl bg-card p-5 shadow-card border border-border">
+            <div className="text-xs font-bold text-secondary uppercase mb-1">Add-on</div>
+            <h4 className="font-heading text-lg font-semibold text-card-foreground">Masterclass Bundle</h4>
+            <p className="text-sm text-muted-foreground mb-2">10+ premium video courses, PDF cheat sheets, and printable care labels</p>
+            <div className="font-bold text-card-foreground">$4.99 <span className="line-through text-muted-foreground text-xs font-normal">$19.99</span></div>
+          </div>
+          <div className="rounded-xl bg-card p-5 shadow-card border border-border">
+            <div className="text-xs font-bold text-bloom uppercase mb-1">Add-on</div>
+            <h4 className="font-heading text-lg font-semibold text-card-foreground">Expert Access Pass</h4>
+            <p className="text-sm text-muted-foreground mb-2">3 expert consultations/mo, priority support, and monthly live Q&A sessions</p>
+            <div className="font-bold text-card-foreground">$9.99<span className="text-muted-foreground text-xs font-normal">/month</span></div>
           </div>
         </div>
       </div>
