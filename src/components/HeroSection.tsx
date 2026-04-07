@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-plants.jpg";
 import { Leaf, Scan, Droplets, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -33,16 +34,16 @@ const HeroSection = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-lg font-body leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-            Identify plants instantly, diagnose diseases with AI, design gardens in AR, 
+            Identify plants instantly, diagnose diseases with AI, design gardens in AR,
             and join a thriving community of plant lovers.
           </p>
 
           <div className="flex flex-wrap gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-            <Button variant="hero" size="lg" className="h-14 px-8 text-base rounded-xl">
-              Start Free — 10 AI Scans
+            <Button asChild variant="hero" size="lg" className="h-14 px-8 text-base rounded-xl">
+              <Link to="/register">Start Free — 10 AI Scans</Link>
             </Button>
-            <Button variant="heroOutline" size="lg" className="h-14 px-8 text-base rounded-xl border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-              Explore Pro Features
+            <Button asChild variant="heroOutline" size="lg" className="h-14 px-8 text-base rounded-xl border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <a href="#pricing">Explore Pro Features</a>
             </Button>
           </div>
 

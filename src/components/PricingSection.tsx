@@ -1,6 +1,7 @@
 import { Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const freeTier = [
   "5 AI plant scans/month",
@@ -25,6 +26,9 @@ const proTier = [
 ];
 
 const PricingSection = () => {
+  const { user } = useAuth();
+  const proCtaHref = user ? "/settings" : "/register";
+
   return (
     <section id="pricing" className="py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -59,11 +63,9 @@ const PricingSection = () => {
                 </li>
               ))}
             </ul>
-            <Link to="/register">
-              <Button variant="heroOutline" className="w-full h-12 rounded-xl">
-                Get Started Free
-              </Button>
-            </Link>
+            <Button asChild variant="heroOutline" className="w-full h-12 rounded-xl">
+              <Link to="/register">Get Started Free</Link>
+            </Button>
           </div>
 
           {/* Pro */}
@@ -89,8 +91,8 @@ const PricingSection = () => {
                 </li>
               ))}
             </ul>
-            <Button variant="gold" className="w-full h-12 rounded-xl text-base">
-              Upgrade to Pro — $7.99
+            <Button asChild variant="gold" className="w-full h-12 rounded-xl text-base">
+              <Link to={proCtaHref}>Upgrade to Pro — $7.99</Link>
             </Button>
             <p className="text-center text-xs text-primary-foreground/50 mt-3">One-time payment. No subscriptions.</p>
           </div>
