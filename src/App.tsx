@@ -18,6 +18,7 @@ import CareCalendar from "./pages/CareCalendar";
 import PlantIdentifier from "./pages/PlantIdentifier";
 import Community from "./pages/Community";
 import Settings from "./pages/Settings";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
