@@ -62,8 +62,8 @@ const Navbar = () => {
             </a>
           ))}
           <div className="flex gap-3 pt-3">
-            <Button variant="ghost" size="sm" className="flex-1">Sign In</Button>
-            <Button variant="hero" size="sm" className="flex-1">Start Free</Button>
+            <a href="/login" className="flex-1"><Button variant="ghost" size="sm" className="w-full">Sign In</Button></a>
+            <a href="/register" className="flex-1"><Button variant="hero" size="sm" className="w-full">Start Free</Button></a>
           </div>
         </div>
       )}
