@@ -3,8 +3,21 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
+import Dashboard from "./pages/Dashboard";
+import MyGarden from "./pages/MyGarden";
+import PlantDetail from "./pages/PlantDetail";
+import CareCalendar from "./pages/CareCalendar";
+import PlantIdentifier from "./pages/PlantIdentifier";
+import Community from "./pages/Community";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +27,23 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/my-garden" element={<ProtectedRoute><MyGarden /></ProtectedRoute>} />
+            <Route path="/plant/:id" element={<ProtectedRoute><PlantDetail /></ProtectedRoute>} />
+            <Route path="/care-calendar" element={<ProtectedRoute><CareCalendar /></ProtectedRoute>} />
+            <Route path="/plant-identifier" element={<ProtectedRoute><PlantIdentifier /></ProtectedRoute>} />
+            <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -36,8 +36,8 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm">Sign In</Button>
-          <Button variant="hero" size="sm">Start Free</Button>
+          <a href="/login"><Button variant="ghost" size="sm">Sign In</Button></a>
+          <a href="/register"><Button variant="hero" size="sm">Start Free</Button></a>
         </div>
 
         <button
@@ -62,8 +62,8 @@ const Navbar = () => {
             </a>
           ))}
           <div className="flex gap-3 pt-3">
-            <Button variant="ghost" size="sm" className="flex-1">Sign In</Button>
-            <Button variant="hero" size="sm" className="flex-1">Start Free</Button>
+            <a href="/login" className="flex-1"><Button variant="ghost" size="sm" className="w-full">Sign In</Button></a>
+            <a href="/register" className="flex-1"><Button variant="hero" size="sm" className="w-full">Start Free</Button></a>
           </div>
         </div>
       )}

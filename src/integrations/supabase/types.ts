@@ -14,7 +14,235 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      community_posts: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          likes_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plant_journal_entries: {
+        Row: {
+          created_at: string
+          id: string
+          milestone_type: string | null
+          note: string | null
+          photo_url: string | null
+          user_id: string
+          user_plant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          milestone_type?: string | null
+          note?: string | null
+          photo_url?: string | null
+          user_id: string
+          user_plant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          milestone_type?: string | null
+          note?: string | null
+          photo_url?: string | null
+          user_id?: string
+          user_plant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_journal_entries_user_plant_id_fkey"
+            columns: ["user_plant_id"]
+            isOneToOne: false
+            referencedRelation: "user_plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plants: {
+        Row: {
+          care_difficulty: string
+          category: string | null
+          common_names: string[] | null
+          common_problems: string[] | null
+          created_at: string
+          description: string | null
+          humidity: string | null
+          id: string
+          image_url: string | null
+          light_needs: string
+          name: string
+          propagation_methods: string[] | null
+          scientific_name: string | null
+          temp_max: number | null
+          temp_min: number | null
+          toxicity_children: boolean | null
+          toxicity_pets: boolean | null
+          water_frequency_days: number
+        }
+        Insert: {
+          care_difficulty?: string
+          category?: string | null
+          common_names?: string[] | null
+          common_problems?: string[] | null
+          created_at?: string
+          description?: string | null
+          humidity?: string | null
+          id?: string
+          image_url?: string | null
+          light_needs?: string
+          name: string
+          propagation_methods?: string[] | null
+          scientific_name?: string | null
+          temp_max?: number | null
+          temp_min?: number | null
+          toxicity_children?: boolean | null
+          toxicity_pets?: boolean | null
+          water_frequency_days?: number
+        }
+        Update: {
+          care_difficulty?: string
+          category?: string | null
+          common_names?: string[] | null
+          common_problems?: string[] | null
+          created_at?: string
+          description?: string | null
+          humidity?: string | null
+          id?: string
+          image_url?: string | null
+          light_needs?: string
+          name?: string
+          propagation_methods?: string[] | null
+          scientific_name?: string | null
+          temp_max?: number | null
+          temp_min?: number | null
+          toxicity_children?: boolean | null
+          toxicity_pets?: boolean | null
+          water_frequency_days?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          care_streak: number
+          created_at: string
+          display_name: string | null
+          id: string
+          subscription_tier: Database["public"]["Enums"]["subscription_tier"]
+          total_plants_saved: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          care_streak?: number
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          total_plants_saved?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          care_streak?: number
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          total_plants_saved?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_plants: {
+        Row: {
+          created_at: string
+          health_score: number
+          id: string
+          last_watered: string | null
+          location: string | null
+          next_water_date: string | null
+          nickname: string
+          notes: string | null
+          photo_url: string | null
+          plant_id: string | null
+          room: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          health_score?: number
+          id?: string
+          last_watered?: string | null
+          location?: string | null
+          next_water_date?: string | null
+          nickname: string
+          notes?: string | null
+          photo_url?: string | null
+          plant_id?: string | null
+          room?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          health_score?: number
+          id?: string
+          last_watered?: string | null
+          location?: string | null
+          next_water_date?: string | null
+          nickname?: string
+          notes?: string | null
+          photo_url?: string | null
+          plant_id?: string | null
+          room?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plants_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +251,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_tier: "free" | "pro" | "masterclass" | "expert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +378,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_tier: ["free", "pro", "masterclass", "expert"],
+    },
   },
 } as const
