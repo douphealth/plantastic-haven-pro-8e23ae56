@@ -1,24 +1,46 @@
+import { forwardRef } from "react";
+import { Link } from "react-router-dom";
 import logoLeaf from "@/assets/logo-leaf.png";
 
-const Footer = () => {
+const Footer = forwardRef<HTMLElement>((_, ref) => {
   const links = {
-    Product: ["Features", "Pricing", "Pro", "Download"],
-    Learn: ["Care Guides", "Courses", "Blog", "Plant of the Week"],
-    Community: ["Forums", "Events", "Plant Swaps", "Expert Network"],
-    Company: ["About", "Careers", "Press", "Contact"],
+    Product: [
+      { label: "Features", href: "#features" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "AI Scanner", href: "/register" },
+      { label: "Dashboard", href: "/register" },
+    ],
+    Learn: [
+      { label: "Care Guides", href: "/register" },
+      { label: "Community Tips", href: "/register" },
+      { label: "Blog", href: "#" },
+      { label: "Plant of the Week", href: "/register" },
+    ],
+    Community: [
+      { label: "Forums", href: "/register" },
+      { label: "Plant Swaps", href: "/register" },
+      { label: "Expert Network", href: "/register" },
+      { label: "Events", href: "#" },
+    ],
+    Company: [
+      { label: "About", href: "#" },
+      { label: "Careers", href: "#" },
+      { label: "Press", href: "#" },
+      { label: "Contact", href: "#" },
+    ],
   };
 
   return (
-    <footer className="bg-foreground text-primary-foreground/80 py-16">
+    <footer ref={ref} className="bg-foreground text-primary-foreground/80 py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-4">
               <img src={logoLeaf} alt="PlantasticHaven" width={28} height={28} className="w-7 h-7" />
               <span className="font-heading text-lg font-bold text-primary-foreground">
                 PlantasticHaven
               </span>
-            </div>
+            </Link>
             <p className="text-sm text-primary-foreground/50 leading-relaxed">
               Your AI-powered plant intelligence platform. Identify, diagnose, design, and grow.
             </p>
@@ -28,10 +50,16 @@ const Footer = () => {
               <h4 className="font-semibold text-primary-foreground text-sm mb-4">{category}</h4>
               <ul className="space-y-2">
                 {items.map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-sm text-primary-foreground/50 hover:text-primary transition-colors">
-                      {item}
-                    </a>
+                  <li key={item.label}>
+                    {item.href.startsWith("#") ? (
+                      <a href={item.href} className="text-sm text-primary-foreground/50 hover:text-primary transition-colors">
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link to={item.href} className="text-sm text-primary-foreground/50 hover:text-primary transition-colors">
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -49,6 +77,8 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = "Footer";
 
 export default Footer;

@@ -1,10 +1,11 @@
+import { forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Leaf, Shield, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CTASection = () => {
+const CTASection = forwardRef<HTMLElement>((_, ref) => {
   return (
-    <section className="py-24 bg-primary text-primary-foreground">
+    <section ref={ref} className="py-24 bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 text-center">
         <div className="max-w-3xl mx-auto">
           <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">
@@ -43,6 +44,8 @@ const CTASection = () => {
       </div>
     </section>
   );
-};
+});
+
+CTASection.displayName = "CTASection";
 
 export default CTASection;
