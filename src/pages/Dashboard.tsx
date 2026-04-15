@@ -50,8 +50,32 @@ const Dashboard = () => {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-pulse-soft text-primary text-lg font-heading">Loading your garden...</div>
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Skeleton header */}
+          <div className="animate-pulse">
+            <div className="h-10 bg-muted rounded-lg w-80 mb-2" />
+            <div className="h-5 bg-muted rounded w-60" />
+          </div>
+          {/* Skeleton stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card rounded-2xl p-5 border border-border animate-pulse">
+                <div className="w-10 h-10 bg-muted rounded-xl mb-3" />
+                <div className="h-7 bg-muted rounded w-16 mb-1" />
+                <div className="h-3 bg-muted rounded w-20" />
+              </div>
+            ))}
+          </div>
+          {/* Skeleton cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card rounded-2xl p-5 border border-border animate-pulse">
+                <div className="w-10 h-10 bg-muted rounded-xl mb-3" />
+                <div className="h-4 bg-muted rounded w-24 mb-1" />
+                <div className="h-3 bg-muted rounded w-32" />
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     );

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Droplets, Trash2, Edit2, X, Check } from "lucide-react";
+import { Plus, Droplets, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import { Link } from "react-router-dom";
@@ -16,6 +16,7 @@ const MyGarden = () => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ nickname: "", location: "Indoor", room: "", notes: "" });
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchPlants = async () => {
     if (!user) return;
@@ -54,8 +55,10 @@ const MyGarden = () => {
   };
 
   const deletePlant = async (id: string) => {
+    setDeleting(id);
     await supabase.from("user_plants").delete().eq("id", id);
     toast({ title: "Plant removed" });
+    setDeleting(null);
     fetchPlants();
   };
 
@@ -74,16 +77,15 @@ const MyGarden = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-heading text-3xl font-bold text-foreground">My Garden</h1>
-            <p className="text-muted-foreground text-sm">{plants.length} plants on your shelf</p>
+            <p className="text-muted-foreground text-sm">{plants.length} plant{plants.length !== 1 ? "s" : ""} on your shelf</p>
           </div>
           <Button variant="hero" onClick={() => setShowAdd(true)} className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Add Plant
           </Button>
         </div>
 
-        {/* Add plant form */}
         {showAdd && (
-          <form onSubmit={addPlant} className="bg-card rounded-2xl p-6 shadow-elevated border border-border space-y-4">
+          <form onSubmit={addPlant} className="bg-card rounded-2xl p-6 shadow-elevated border border-border space-y-4 animate-fade-in-up">
             <div className="flex justify-between items-center">
               <h2 className="font-heading text-xl font-semibold">Add New Plant</h2>
               <button type="button" onClick={() => setShowAdd(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
@@ -115,9 +117,17 @@ const MyGarden = () => {
           </form>
         )}
 
-        {/* Plant grid */}
         {loading ? (
-          <div className="text-center text-muted-foreground py-12">Loading your garden...</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-2xl p-5 border border-border animate-pulse">
+                <div className="h-5 bg-muted rounded w-2/3 mb-2" />
+                <div className="h-3 bg-muted rounded w-1/2 mb-4" />
+                <div className="h-2 bg-muted rounded w-full mb-4" />
+                <div className="h-8 bg-muted rounded w-1/3" />
+              </div>
+            ))}
+          </div>
         ) : plants.length === 0 ? (
           <div className="text-center py-16 bg-card rounded-2xl shadow-card border border-border">
             <div className="text-5xl mb-4">🌿</div>
@@ -132,25 +142,31 @@ const MyGarden = () => {
             {plants.map((plant) => {
               const needsWater = plant.next_water_date && new Date(plant.next_water_date) <= new Date();
               return (
-                <div key={plant.id} className="bg-card rounded-2xl p-5 shadow-card border border-border hover:shadow-elevated transition-all">
+                <div key={plant.id} className="bg-card rounded-2xl p-5 shadow-card border border-border hover:shadow-elevated transition-all group">
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-heading text-lg font-semibold text-card-foreground">{plant.nickname}</h3>
+                    <Link to={`/plant/${plant.id}`} className="flex-1 min-w-0">
+                      <h3 className="font-heading text-lg font-semibold text-card-foreground group-hover:text-primary transition-colors">{plant.nickname}</h3>
                       <p className="text-xs text-muted-foreground">{plant.location}{plant.room ? ` · ${plant.room}` : ""}</p>
-                    </div>
-                    <button onClick={() => deletePlant(plant.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    </Link>
+                    <button
+                      onClick={() => deletePlant(plant.id)}
+                      disabled={deleting === plant.id}
+                      className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Health bar */}
                   <div className="mb-3">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-muted-foreground">Health</span>
-                      <span className="font-bold text-primary">{plant.health_score}%</span>
+                      <span className={`font-bold ${plant.health_score >= 80 ? "text-primary" : plant.health_score >= 50 ? "text-secondary" : "text-bloom"}`}>{plant.health_score}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${plant.health_score}%` }} />
+                      <div
+                        className={`h-full rounded-full transition-all ${plant.health_score >= 80 ? "bg-primary" : plant.health_score >= 50 ? "bg-secondary" : "bg-bloom"}`}
+                        style={{ width: `${plant.health_score}%` }}
+                      />
                     </div>
                   </div>
 

@@ -1,5 +1,6 @@
 import { MessageCircle, Award, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const stats = [
   { value: "250K+", label: "Community Members" },
@@ -24,7 +25,6 @@ const CommunitySection = () => {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 max-w-3xl mx-auto">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center p-6 rounded-2xl bg-card shadow-card border border-border">
@@ -34,24 +34,11 @@ const CommunitySection = () => {
           ))}
         </div>
 
-        {/* Feature highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            {
-              icon: MessageCircle,
-              title: "Ask Experts",
-              description: "Get personalized advice from certified horticulturists within 24 hours.",
-            },
-            {
-              icon: MapPin,
-              title: "Local Groups",
-              description: "Find plant lovers near you for meetups, swaps, and shared garden projects.",
-            },
-            {
-              icon: Award,
-              title: "Pro Badge",
-              description: "Stand out with your verified Pro badge and share your expertise.",
-            },
+            { icon: MessageCircle, title: "Ask Experts", description: "Get personalized advice from certified horticulturists within 24 hours." },
+            { icon: MapPin, title: "Local Groups", description: "Find plant lovers near you for meetups, swaps, and shared garden projects." },
+            { icon: Award, title: "Pro Badge", description: "Stand out with your verified Pro badge and share your expertise." },
           ].map((feature) => (
             <div key={feature.title} className="text-center p-8 rounded-2xl bg-card shadow-card border border-border hover:shadow-elevated transition-all duration-300 hover:-translate-y-1">
               <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mx-auto mb-4">
@@ -64,8 +51,8 @@ const CommunitySection = () => {
         </div>
 
         <div className="text-center mt-12">
-          <Button variant="hero" size="lg" className="h-14 px-8 rounded-xl">
-            Join the Community <ArrowRight className="w-5 h-5 ml-2" />
+          <Button asChild variant="hero" size="lg" className="h-14 px-8 rounded-xl">
+            <Link to="/register">Join the Community <ArrowRight className="w-5 h-5 ml-2" /></Link>
           </Button>
         </div>
       </div>

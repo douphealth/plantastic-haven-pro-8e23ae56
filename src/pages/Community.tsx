@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Plus, X, Heart, Search, Filter } from "lucide-react";
+import { MessageCircle, Plus, X, Heart, Search, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 
@@ -19,6 +19,7 @@ const Community = () => {
   const [form, setForm] = useState({ title: "", content: "", category: "general" });
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
   const fetchPosts = async () => {
     const { data } = await supabase
@@ -29,7 +30,6 @@ const Community = () => {
     const postsData = data || [];
     setPosts(postsData);
 
-    // Fetch profiles for unique user_ids
     const userIds = [...new Set(postsData.map((p: any) => p.user_id))];
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
@@ -64,6 +64,39 @@ const Community = () => {
     }
   };
 
+  const handleLike = async (postId: string, currentLikes: number) => {
+    if (!user) {
+      toast({ title: "Sign in to like posts", variant: "destructive" });
+      return;
+    }
+    if (likingIds.has(postId)) return;
+    setLikingIds((prev) => new Set(prev).add(postId));
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes + 1 } : p))
+    );
+
+    const { error } = await supabase
+      .from("community_posts")
+      .update({ likes_count: currentLikes + 1 })
+      .eq("id", postId);
+
+    if (error) {
+      // Revert
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes } : p))
+      );
+      toast({ title: "Like failed", variant: "destructive" });
+    }
+
+    setLikingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(postId);
+      return next;
+    });
+  };
+
   const categoryColor: Record<string, string> = {
     general: "bg-muted text-muted-foreground",
     question: "bg-sky/10 text-sky",
@@ -73,11 +106,7 @@ const Community = () => {
   };
 
   const categoryEmoji: Record<string, string> = {
-    general: "💬",
-    question: "❓",
-    tip: "💡",
-    showcase: "🌸",
-    swap: "🔄",
+    general: "💬", question: "❓", tip: "💡", showcase: "🌸", swap: "🔄",
   };
 
   const filteredPosts = posts.filter((post) => {
@@ -99,7 +128,6 @@ const Community = () => {
           </Button>
         </div>
 
-        {/* Search + filter */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -150,7 +178,16 @@ const Community = () => {
         )}
 
         {loading ? (
-          <div className="text-center text-muted-foreground py-12">Loading posts...</div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-2xl p-5 shadow-card border border-border animate-pulse">
+                <div className="h-4 bg-muted rounded w-20 mb-3" />
+                <div className="h-5 bg-muted rounded w-3/4 mb-2" />
+                <div className="h-4 bg-muted rounded w-full mb-1" />
+                <div className="h-4 bg-muted rounded w-2/3" />
+              </div>
+            ))}
+          </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-16 bg-card rounded-2xl shadow-card border border-border">
             <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -184,8 +221,12 @@ const Community = () => {
                     <span className="font-medium">{profiles[post.user_id] || "Anonymous"}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-1 hover:text-bloom transition-colors">
-                      <Heart className="w-3.5 h-3.5" /> {post.likes_count}
+                    <button
+                      onClick={() => handleLike(post.id, post.likes_count)}
+                      disabled={likingIds.has(post.id)}
+                      className="flex items-center gap-1 hover:text-bloom transition-colors disabled:opacity-50"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${post.likes_count > 0 ? "fill-bloom text-bloom" : ""}`} /> {post.likes_count}
                     </button>
                     <span>{new Date(post.created_at).toLocaleDateString()}</span>
                   </div>
