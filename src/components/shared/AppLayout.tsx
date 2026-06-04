@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logoLeaf from "@/assets/logo-leaf.png";
 import {
-  LayoutDashboard, Leaf, Calendar, Scan, MessageCircle, Settings, LogOut, Menu, X,
+  LayoutDashboard, Leaf, Calendar, Scan, MessageCircle, Settings, LogOut, Menu, X, Mail
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/my-garden", label: "My Garden", icon: Leaf },
   { to: "/care-calendar", label: "Care Calendar", icon: Calendar },
   { to: "/plant-identifier", label: "AI Scanner", icon: Scan },
+  { to: "/email-sequences", label: "Care Sequences", icon: Mail },
   { to: "/community", label: "Community", icon: MessageCircle },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

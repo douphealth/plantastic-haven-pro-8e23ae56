@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Droplets, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
+import PDFExporter from "@/components/shared/PDFExporter";
 import { Link } from "react-router-dom";
 
 const MyGarden = () => {
@@ -179,9 +180,17 @@ const MyGarden = () => {
                     </Button>
                   </div>
 
-                  <Link to={`/plant/${plant.id}`} className="block mt-3 text-xs text-primary hover:underline text-center">
-                    View Details →
-                  </Link>
+                  <div className="flex justify-between items-center mt-3 pt-2 border-t border-border/80">
+                    <Link to={`/plant/${plant.id}`} className="text-xs text-primary hover:underline font-semibold">
+                      View Details →
+                    </Link>
+                    <PDFExporter 
+                      plant={plant} 
+                      triggerText="Print Care Guide & Label Tag" 
+                      variant="ghost" 
+                      size="icon"
+                    />
+                  </div>
                 </div>
               );
             })}

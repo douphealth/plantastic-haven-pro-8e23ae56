@@ -19,6 +19,7 @@ import PlantIdentifier from "./pages/PlantIdentifier";
 import Community from "./pages/Community";
 import Settings from "./pages/Settings";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import EmailSequences from "./pages/EmailSequences";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/care-calendar" element={<ProtectedRoute><CareCalendar /></ProtectedRoute>} />
             <Route path="/plant-identifier" element={<ProtectedRoute><PlantIdentifier /></ProtectedRoute>} />
             <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+            <Route path="/email-sequences" element={<ProtectedRoute><EmailSequences /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

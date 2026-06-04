@@ -4,6 +4,7 @@ import { Scan, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/shared/AppLayout";
+import PDFExporter from "@/components/shared/PDFExporter";
 
 const PlantIdentifier = () => {
   const [description, setDescription] = useState("");
@@ -52,8 +53,27 @@ const PlantIdentifier = () => {
 
         {result && (
           <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-4 animate-fade-in-up">
-            <h2 className="font-heading text-2xl font-bold text-primary">{result.name || "Unknown Plant"}</h2>
-            {result.scientific_name && <p className="text-sm italic text-muted-foreground">{result.scientific_name}</p>}
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-primary">{result.name || "Unknown Plant"}</h2>
+                {result.scientific_name && <p className="text-sm italic text-muted-foreground">{result.scientific_name}</p>}
+              </div>
+              <PDFExporter 
+                plant={{
+                  nickname: result.name || "Identified Plant",
+                  scientific_name: result.scientific_name,
+                  health_score: 100,
+                  difficulty: result.difficulty,
+                  light: result.light,
+                  water: result.water,
+                  toxicity: result.toxicity,
+                  care_tips: Array.isArray(result.care_tips) ? result.care_tips : [result.care_tips],
+                  notes: `AI Scanner Diagnosis for: "${description}"`
+                }} 
+                triggerText="Export AI Scan PDF" 
+                variant="outline" 
+              />
+            </div>
 
             {result.description && (
               <div>

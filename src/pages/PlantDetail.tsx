@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Droplets, Sun, Heart, ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
+import PDFExporter from "@/components/shared/PDFExporter";
 
 const PlantDetail = () => {
   const { id } = useParams();
@@ -78,9 +79,17 @@ const PlantDetail = () => {
               </h1>
               <p className="text-muted-foreground text-sm">{plant.location}{plant.room ? ` · ${plant.room}` : ""}</p>
             </div>
-            <Button variant="hero" onClick={waterPlant} className="rounded-xl">
-              <Droplets className="w-4 h-4 mr-2" /> Water Now
-            </Button>
+            <div className="flex gap-2">
+              <PDFExporter 
+                plant={plant} 
+                journalEntries={entries} 
+                triggerText="Export Care Guide" 
+                variant="outline" 
+              />
+              <Button variant="hero" onClick={waterPlant} className="rounded-xl">
+                <Droplets className="w-4 h-4 mr-2" /> Water Now
+              </Button>
+            </div>
           </div>
 
           <div className="mb-4">

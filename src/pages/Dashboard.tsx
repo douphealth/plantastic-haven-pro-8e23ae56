@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Droplets, Leaf, Flame, Sun, Plus, Scan, TrendingUp, Calendar, Award, Crown, ArrowRight, Sparkles, Target, BarChart3 } from "lucide-react";
+import { Droplets, Leaf, Flame, Sun, Plus, Scan, TrendingUp, Calendar, Award, Crown, ArrowRight, Sparkles, Target, BarChart3, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/shared/AppLayout";
@@ -235,6 +235,29 @@ const Dashboard = () => {
                   <div className="text-[10px] text-muted-foreground">Need Care</div>
                 </div>
               </div>
+            </div>
+            
+            {/* Active Email Masterclasses Card */}
+            <div className="bg-card rounded-2xl p-5 shadow-card border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-heading font-semibold text-card-foreground flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" /> Active Drip Courses
+                </h3>
+                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">Pro</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Learn aroid soil science, watering rules, and lighting parameters step-by-step.
+              </p>
+              <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
+                <div className="text-[10px] font-bold text-secondary uppercase tracking-wide">Next Lesson</div>
+                <div className="text-xs font-semibold text-card-foreground mt-0.5 truncate">Day 2: Window Light Secrets</div>
+                <div className="text-[10px] text-muted-foreground mt-1">Tomorrow at 8:00 AM</div>
+              </div>
+              <Link to="/email-sequences" className="block">
+                <Button variant="outline" size="sm" className="w-full rounded-xl text-xs flex items-center justify-center gap-1">
+                  Manage Sequences <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
             </div>
 
             {/* Pro upsell */}
