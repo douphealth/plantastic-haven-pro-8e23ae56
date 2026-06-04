@@ -83,6 +83,25 @@ const Register = () => {
           <Button type="submit" variant="hero" className="w-full h-12 rounded-xl" disabled={loading}>
             {loading ? "Creating account..." : "Get Started Free"}
           </Button>
+
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-border"></div>
+            <span className="flex-shrink mx-4 text-muted-foreground text-xs uppercase tracking-wider">or</span>
+            <div className="flex-grow border-t border-border"></div>
+          </div>
+
+          <Button 
+            type="button" 
+            variant="heroOutline" 
+            onClick={() => {
+              localStorage.setItem("guest_mode", "true");
+              window.location.href = "/dashboard";
+            }}
+            className="w-full h-12 rounded-xl border-dashed border-primary text-primary hover:bg-primary/5 flex items-center justify-center gap-2 font-bold"
+          >
+            ⚡ Continue as Guest (No Account Required)
+          </Button>
+
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link to="/login" className="text-primary font-medium hover:underline">Sign in</Link>

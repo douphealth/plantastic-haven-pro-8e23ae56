@@ -16,11 +16,17 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => {
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <Link to="/register">
-              <Button variant="gold" size="lg" className="h-14 px-8 rounded-xl text-base">
-                Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
+            <Button 
+              variant="gold" 
+              size="lg" 
+              onClick={() => {
+                localStorage.setItem("guest_mode", "true");
+                window.location.href = "/dashboard";
+              }}
+              className="h-14 px-8 rounded-xl text-base cursor-pointer"
+            >
+              Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
             <Link to="/login">
               <Button variant="heroOutline" size="lg" className="h-14 px-8 rounded-xl text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
                 Sign In

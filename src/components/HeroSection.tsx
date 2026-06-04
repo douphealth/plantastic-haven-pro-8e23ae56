@@ -39,8 +39,16 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-wrap gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-            <Button asChild variant="hero" size="lg" className="h-14 px-8 text-base rounded-xl">
-              <Link to="/register">Start Free — 10 AI Scans</Link>
+            <Button 
+              variant="hero" 
+              size="lg" 
+              onClick={() => {
+                localStorage.setItem("guest_mode", "true");
+                window.location.href = "/dashboard";
+              }}
+              className="h-14 px-8 text-base rounded-xl cursor-pointer"
+            >
+              Start Free (Instant Access) 🌿
             </Button>
             <Button asChild variant="heroOutline" size="lg" className="h-14 px-8 text-base rounded-xl border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
               <a href="#pricing">Explore Pro Features</a>

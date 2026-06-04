@@ -40,8 +40,16 @@ const Navbar = () => {
           <Button asChild variant="ghost" size="sm">
             <Link to="/login">Sign In</Link>
           </Button>
-          <Button asChild variant="hero" size="sm">
-            <Link to="/register">Start Free</Link>
+          <Button 
+            variant="hero" 
+            size="sm"
+            onClick={() => {
+              localStorage.setItem("guest_mode", "true");
+              window.location.href = "/dashboard";
+            }}
+            className="cursor-pointer"
+          >
+            Start Free
           </Button>
         </div>
 
@@ -70,8 +78,16 @@ const Navbar = () => {
             <Button asChild variant="ghost" size="sm" className="flex-1">
               <Link to="/login">Sign In</Link>
             </Button>
-            <Button asChild variant="hero" size="sm" className="flex-1">
-              <Link to="/register">Start Free</Link>
+            <Button 
+              variant="hero" 
+              size="sm" 
+              className="flex-1 cursor-pointer"
+              onClick={() => {
+                localStorage.setItem("guest_mode", "true");
+                window.location.href = "/dashboard";
+              }}
+            >
+              Start Free
             </Button>
           </div>
         </div>
