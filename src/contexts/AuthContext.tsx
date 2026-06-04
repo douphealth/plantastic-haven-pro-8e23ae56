@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -14,21 +13,44 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const GUEST_USER: User = {
+  id: "guest-user-id",
+  email: "guest-gardener@plantastichaven.com",
+  user_metadata: { display_name: "Premium Guest Gardener" },
+  role: "authenticated",
+  aud: "authenticated",
+  created_at: new Date().toISOString(),
+  app_metadata: {},
+} as any;
+
+const GUEST_SESSION: Session = {
+  access_token: "mock-token",
+  token_type: "bearer",
+  expires_in: 3600,
+  refresh_token: "mock-refresh-token",
+  user: GUEST_USER,
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize with the guest user immediately to bypass all login/signup screens
+  const [user, setUser] = useState<User | null>(GUEST_USER);
+  const [session, setSession] = useState<Session | null>(GUEST_SESSION);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Keep local storage guest mode enabled
+    localStorage.setItem("guest_mode", "true");
+    localStorage.setItem("mock_session", JSON.stringify(GUEST_SESSION));
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      } else {
+        // Fallback to guest session if logged out
+        setSession(GUEST_SESSION);
+        setUser(GUEST_USER);
+      }
       setLoading(false);
     });
 
@@ -36,24 +58,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName || email },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error: error as Error | null };
+    // Always succeed in guest mode
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    // Always succeed in guest mode
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Keep user authenticated in guest mode, do not log out
+    console.log("Sign out requested, maintaining guest session.");
   };
 
   return (

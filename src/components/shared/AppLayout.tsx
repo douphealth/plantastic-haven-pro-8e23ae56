@@ -58,12 +58,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-border">
-        <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive w-full transition-colors">
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </button>
-      </div>
     </div>
   );
 

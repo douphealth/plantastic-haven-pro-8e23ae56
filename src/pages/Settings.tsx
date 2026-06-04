@@ -164,14 +164,6 @@ const Settings = () => {
             </div>
           )}
         </div>
-
-        {/* Danger zone */}
-        <div className="bg-card rounded-2xl p-6 shadow-card border border-border">
-          <h2 className="font-heading text-xl font-semibold text-destructive mb-3 flex items-center gap-2">
-            <Shield className="w-5 h-5" /> Danger Zone
-          </h2>
-          <Button variant="destructive" onClick={signOut} className="rounded-xl">Sign Out</Button>
-        </div>
       </div>
     </AppLayout>
   );
