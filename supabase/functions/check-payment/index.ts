@@ -66,7 +66,7 @@ serve(async (req) => {
         : null;
 
     const sessionQualifies = async (
-      session: Stripe.Checkout.Session
+      session: any
     ): Promise<boolean> => {
       if (
         session.status !== "complete" ||
