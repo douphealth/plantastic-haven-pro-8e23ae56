@@ -28,6 +28,12 @@ import PlantDetail from "./pages/PlantDetail";
 
 const queryClient = new QueryClient();
 
+const signedIn = (element: React.ReactNode) => (
+  <ProtectedRoute>{element}</ProtectedRoute>
+);
+
+const proOnly = (element: React.ReactNode) => <ProRoute>{element}</ProRoute>;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -48,79 +54,16 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payment-success"
-              element={
-                <ProtectedRoute>
-                  <PaymentSuccess />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={signedIn(<Dashboard />)} />
+            <Route path="/settings" element={signedIn(<Settings />)} />
+            <Route path="/payment-success" element={signedIn(<PaymentSuccess />)} />
+            <Route path="/my-garden" element={signedIn(<MyGarden />)} />
+            <Route path="/care-calendar" element={signedIn(<CareCalendar />)} />
+            <Route path="/plant-identifier" element={signedIn(<PlantIdentifier />)} />
+            <Route path="/community" element={signedIn(<Community />)} />
+            <Route path="/plant/:id" element={signedIn(<PlantDetail />)} />
 
-            <Route
-              path="/my-garden"
-              element={
-                <ProRoute>
-                  <MyGarden />
-                </ProRoute>
-              }
-            />
-            <Route
-              path="/care-calendar"
-              element={
-                <ProRoute>
-                  <CareCalendar />
-                </ProRoute>
-              }
-            />
-            <Route
-              path="/plant-identifier"
-              element={
-                <ProRoute>
-                  <PlantIdentifier />
-                </ProRoute>
-              }
-            />
-            <Route
-              path="/email-sequences"
-              element={
-                <ProRoute>
-                  <EmailSequences />
-                </ProRoute>
-              }
-            />
-            <Route
-              path="/community"
-              element={
-                <ProRoute>
-                  <Community />
-                </ProRoute>
-              }
-            />
-            <Route
-              path="/plant/:id"
-              element={
-                <ProRoute>
-                  <PlantDetail />
-                </ProRoute>
-              }
-            />
+            <Route path="/email-sequences" element={proOnly(<EmailSequences />)} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
