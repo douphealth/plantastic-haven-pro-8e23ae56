@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Droplets, Trash2, X } from "lucide-react";
+import { Plus, Droplets, Trash2, X, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
@@ -18,6 +18,7 @@ const MyGarden = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ nickname: "", location: "Indoor", room: "", notes: "" });
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const fetchPlants = async () => {
     if (!user) return;
@@ -46,7 +47,9 @@ const MyGarden = () => {
       next_water_date: new Date(Date.now() + 7 * 86400000).toISOString(),
     });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      const isLimit = error.message.toLowerCase().includes("15 plants");
+      setLimitReached(isLimit);
+      toast({ title: isLimit ? "Free plan limit reached" : "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Plant added! 🌱" });
       setForm({ nickname: "", location: "Indoor", room: "", notes: "" });
@@ -84,6 +87,18 @@ const MyGarden = () => {
             <Plus className="w-4 h-4 mr-2" /> Add Plant
           </Button>
         </div>
+
+        {limitReached && (
+          <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-foreground">Your free garden is full</div>
+              <p className="text-sm text-muted-foreground">Free accounts can track up to 15 plants. Pro removes the limit.</p>
+            </div>
+            <Button asChild variant="gold" className="rounded-xl shrink-0">
+              <Link to="/settings?upgrade=1"><Crown className="w-4 h-4 mr-2" /> Upgrade to Pro</Link>
+            </Button>
+          </div>
+        )}
 
         {showAdd && (
           <form onSubmit={addPlant} className="bg-card rounded-2xl p-6 shadow-elevated border border-border space-y-4 animate-fade-in-up">

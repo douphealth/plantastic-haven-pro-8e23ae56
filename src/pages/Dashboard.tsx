@@ -17,7 +17,7 @@ const Dashboard = () => {
     if (!user) return;
     const load = async () => {
       const [profileRes, plantsRes, allPlantsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+        supabase.from("profiles").select("id,user_id,display_name,avatar_url,subscription_tier,care_streak,total_plants_saved,created_at,updated_at").eq("user_id", user.id).single(),
         supabase.from("user_plants").select("*").eq("user_id", user.id).order("next_water_date", { ascending: true }).limit(5),
         supabase.from("user_plants").select("*").eq("user_id", user.id),
       ]);

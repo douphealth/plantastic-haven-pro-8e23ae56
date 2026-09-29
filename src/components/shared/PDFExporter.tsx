@@ -1,5 +1,6 @@
 import { Printer, ShieldAlert, Sparkles, Check, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export interface PDFPlantData {
   nickname: string;
@@ -32,6 +33,7 @@ export const PDFExporter = ({
   variant = "hero",
   size = "default"
 }: PDFExporterProps) => {
+  const { toast } = useToast();
 
   const handlePrint = () => {
     // Generate a unique report ID
@@ -497,7 +499,7 @@ export const PDFExporter = ({
 
   return (
     <Button 
-      variant={variant === "gold" ? "hero" : variant} 
+      variant={variant === "gold" ? "hero" : variant === "primary" ? "default" : variant} 
       size={size === "icon" ? "icon" : size}
       onClick={handlePrint}
       className={`${variant === "gold" ? "bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white font-bold" : ""} rounded-xl flex items-center justify-center ${size === "icon" ? "p-2" : "gap-2 font-semibold"} transition-all hover:scale-[1.02] shadow-sm`}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PricingSection from "@/components/PricingSection";
 import { Button } from "@/components/ui/button";
 import { 
   Leaf, 
@@ -196,13 +197,14 @@ const Index = () => {
               </div>
               <div className="bg-background rounded-xl p-3 border border-border text-center flex-1 md:flex-none">
                 <div className="text-2xl font-black text-secondary-foreground">100%</div>
-                <div className="text-xxs uppercase tracking-wider text-muted-foreground">Free Access</div>
+                <div className="text-xxs uppercase tracking-wider text-muted-foreground">Core Tools Free</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      <PricingSection />
       <Footer />
     </div>
   );
