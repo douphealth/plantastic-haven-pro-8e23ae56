@@ -3,9 +3,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Plus, X, Heart, Search, Loader2 } from "lucide-react";
+import { MessageCircle, Plus, X, Heart, Search, Loader2, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
+import { Link } from "react-router-dom";
 
 const categories = ["all", "general", "question", "tip", "showcase", "swap"] as const;
 
@@ -20,6 +21,7 @@ const Community = () => {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+  const [postLimitReached, setPostLimitReached] = useState(false);
 
   const fetchPosts = async () => {
     const { data } = await supabase
@@ -55,7 +57,9 @@ const Community = () => {
       category: form.category,
     });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      const isLimit = error.message.toLowerCase().includes("5 community posts");
+      setPostLimitReached(isLimit);
+      toast({ title: isLimit ? "Monthly free limit reached" : "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Post created! 🌿" });
       setForm({ title: "", content: "", category: "general" });
@@ -127,6 +131,18 @@ const Community = () => {
             <Plus className="w-4 h-4 mr-2" /> New Post
           </Button>
         </div>
+
+        {postLimitReached && (
+          <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-foreground">Free posting limit reached</div>
+              <p className="text-sm text-muted-foreground">Free accounts can create 5 community posts per month. Reading remains available.</p>
+            </div>
+            <Button asChild variant="gold" className="rounded-xl shrink-0">
+              <Link to="/settings?upgrade=1"><Crown className="w-4 h-4 mr-2" /> Upgrade to Pro</Link>
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-3">
           <div className="relative">
