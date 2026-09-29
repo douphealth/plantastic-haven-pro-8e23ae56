@@ -34,7 +34,7 @@ const Settings = () => {
     const [profileResult, entitlementResult] = await Promise.all([
       supabase
         .from("profiles")
-        .select("*")
+        .select("id,user_id,display_name,avatar_url,subscription_tier,care_streak,total_plants_saved,created_at,updated_at")
         .eq("user_id", user.id)
         .single(),
       supabase.functions.invoke("check-payment", { body: {} }),
