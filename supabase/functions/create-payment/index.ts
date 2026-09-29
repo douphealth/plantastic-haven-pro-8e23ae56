@@ -63,6 +63,16 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profile?.subscription_tier === "pro") {
+      return json({ error: "Pro access is already active" }, 409);
+    }
+
     const existingCustomers = await stripe.customers.list({
       email: user.email,
       limit: 1,
@@ -83,6 +93,13 @@ serve(async (req) => {
         user_id: user.id,
         entitlement: "pro",
         price_id: PRO_PRICE_ID,
+      },
+      payment_intent_data: {
+        metadata: {
+          user_id: user.id,
+          entitlement: "pro",
+          price_id: PRO_PRICE_ID,
+        },
       },
     });
 
