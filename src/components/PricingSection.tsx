@@ -15,12 +15,12 @@ const freeTier = [
 const proTier = [
   "Unlimited AI scans & diagnostics",
   "Unlimited plants",
-  "Disease & pest AI diagnosis",
-  "Advanced care tools",
-  "Growth tracking",
+  "Unlimited monthly usage on Pro tools",
+  "Unlimited tracked plants",
   "Premium care sequences",
-  "Exportable care resources",
-  "Priority feature access",
+  "No free-tier plant or posting caps",
+  "Server-verified lifetime entitlement",
+  "Future Pro-only features on this account",
 ];
 
 const PricingSection = () => {
