@@ -24,7 +24,10 @@ serve(async (req) => {
 
   let reservedFreeScan = false;
   let userId: string | null = null;
-  let admin: ReturnType<typeof createClient> | null = null;
+  // Edge functions do not import the browser-generated Database type; keep the
+  // privileged server client dynamically typed at this boundary and validate
+  // every returned value before use.
+  let admin: any = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
