@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import logoLeaf from "@/assets/logo-leaf.png";
+
+const safeNext = (value: string | null) => {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+  return value;
+};
 
 const Register = () => {
   const [displayName, setDisplayName] = useState("");
@@ -16,26 +23,59 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  const next = safeNext(searchParams.get("next"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast({ title: "Password too short", description: "Use at least 6 characters", variant: "destructive" });
+
+    if (password.length < 8) {
+      toast({
+        title: "Use a stronger password",
+        description: "Use at least 8 characters.",
+        variant: "destructive",
+      });
       return;
     }
+
     setLoading(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error, requiresEmailConfirmation } = await signUp(
+      email.trim(),
+      password,
+      displayName
+    );
     setLoading(false);
+
     if (error) {
-      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Welcome to PlantasticHaven! 🌿", description: "Check your email to confirm your account." });
-      navigate("/dashboard");
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (requiresEmailConfirmation) {
+      toast({
+        title: "Check your inbox",
+        description:
+          "Confirm your email, then sign in to continue. Your requested destination will be preserved.",
+      });
+      navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
+      return;
+    }
+
+    navigate(next, { replace: true });
   };
 
-  const freePerks = ["15 plants on your shelf", "5 AI plant scans/month", "Smart watering reminders", "Community access"];
+  const freePerks = [
+    "15 plants on your shelf",
+    "5 AI plant scans/month",
+    "Smart watering reminders",
+    "Community access",
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
@@ -47,64 +87,107 @@ const Register = () => {
               Plantastic<span className="text-primary">Haven</span>
             </span>
           </Link>
-          <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Join PlantasticHaven</h1>
-          <p className="text-muted-foreground">Start your free plant care journey</p>
+          <h1 className="font-heading text-3xl font-bold text-foreground mb-2">
+            Create your free account
+          </h1>
+          <p className="text-muted-foreground">
+            Sync your garden and keep purchases tied to you
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-elevated p-8 border border-border space-y-5">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-card rounded-2xl shadow-elevated p-8 border border-border space-y-5"
+        >
           <div className="space-y-2">
             <Label htmlFor="name">Display Name</Label>
-            <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Plant Lover" required />
+            <Input
+              id="name"
+              autoComplete="name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Plant Lover"
+              required
+            />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 characters" required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                minLength={8}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
 
           <div className="bg-accent/50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-accent-foreground mb-2">Free tier includes:</p>
+            <p className="text-xs font-semibold text-accent-foreground mb-2">
+              Free tier includes:
+            </p>
             {freePerks.map((perk) => (
-              <div key={perk} className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <div
+                key={perk}
+                className="flex items-center gap-2 text-xs text-muted-foreground mb-1"
+              >
                 <Check className="w-3 h-3 text-primary" />
                 <span>{perk}</span>
               </div>
             ))}
           </div>
 
-          <Button type="submit" variant="hero" className="w-full h-12 rounded-xl" disabled={loading}>
-            {loading ? "Creating account..." : "Get Started Free"}
-          </Button>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="flex-shrink mx-4 text-muted-foreground text-xs uppercase tracking-wider">or</span>
-            <div className="flex-grow border-t border-border"></div>
-          </div>
-
-          <Button 
-            type="button" 
-            variant="heroOutline" 
-            onClick={() => {
-              localStorage.setItem("guest_mode", "true");
-              window.location.href = "/dashboard";
-            }}
-            className="w-full h-12 rounded-xl border-dashed border-primary text-primary hover:bg-primary/5 flex items-center justify-center gap-2 font-bold"
+          <Button
+            type="submit"
+            variant="hero"
+            className="w-full h-12 rounded-xl"
+            disabled={loading}
           >
-            ⚡ Continue as Guest (No Account Required)
+            {loading ? "Creating account..." : "Create Free Account"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">Sign in</Link>
+            <Link
+              to={`/login?next=${encodeURIComponent(next)}`}
+              className="text-primary font-medium hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+
+          <p className="text-center text-xs text-muted-foreground">
+            You can still use the public diagnosis and care-plan tools without signing up.
           </p>
         </form>
       </div>
