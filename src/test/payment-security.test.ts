@@ -65,7 +65,7 @@ describe("payment and entitlement security invariants", () => {
     );
 
     expect(migration).toContain(
-      "REVOKE UPDATE ON TABLE public.profiles FROM authenticated"
+      "REVOKE INSERT, UPDATE ON TABLE public.profiles FROM authenticated"
     );
     expect(migration).toContain(
       "GRANT UPDATE (display_name, avatar_url) ON TABLE public.profiles TO authenticated"
