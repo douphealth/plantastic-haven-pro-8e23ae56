@@ -35,6 +35,7 @@ The payment functions require:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PRO_PRICE_ID=price_1TJZHkGCqwm95OGXjymU2Vuw`
+- `STRIPE_WEBHOOK_SECRET=whsec_...`
 - `APP_URL=https://procare.plantastichaven.com`
 
 Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions in the project environment.
@@ -44,6 +45,7 @@ Deploy these Edge Functions with JWT verification enabled:
 - `create-payment`
 - `check-payment`
 - `plant-identifier`
+- `stripe-webhook` (configured with `verify_jwt = false`; Stripe authenticates it with its signature)
 
 Apply all migrations, including the entitlement hardening migration that prevents browser clients from editing `profiles.subscription_tier`.
 
@@ -64,7 +66,20 @@ Allow redirect URLs used by authentication, including:
 3. Stripe redirects to `/payment-success?session_id=...`.
 4. `check-payment` verifies the authenticated user, completed/paid Checkout state, user metadata ownership, and exact Pro line item.
 5. Only after successful verification does the service role set `profiles.subscription_tier = 'pro'`.
-6. Premium routes independently check the stored entitlement and can re-check Stripe before rendering.
+6. The signed `stripe-webhook` independently fulfills successful or delayed payments and reconciles full refunds/disputes.
+7. Premium routes independently check the stored entitlement and can re-check Stripe before rendering.
+
+Register this Stripe webhook endpoint:
+
+`https://sesleusxaskzjtlifzgp.supabase.co/functions/v1/stripe-webhook`
+
+Subscribe only to:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `charge.refunded`
+- `charge.dispute.created`
+- `charge.dispute.closed`
 
 Never grant Pro from a browser flag, localStorage value, arbitrary client price ID, or an unverified success redirect.
 
