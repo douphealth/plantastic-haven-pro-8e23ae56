@@ -76,8 +76,8 @@ serve(async (req) => {
       client_reference_id: user.id,
       line_items: [{ price: PRO_PRICE_ID, quantity: 1 }],
       mode: "payment",
-      success_url: \`\${APP_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}\`,
-      cancel_url: \`\${APP_URL}/settings?checkout=cancelled\`,
+      success_url: APP_URL + "/payment-success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: APP_URL + "/settings?checkout=cancelled",
       allow_promotion_codes: false,
       metadata: {
         user_id: user.id,
