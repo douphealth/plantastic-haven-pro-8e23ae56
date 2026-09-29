@@ -51,6 +51,14 @@ describe("payment and entitlement security invariants", () => {
     expect(app).toContain("<PremiumRoute>");
   });
 
+  it("requires Pro inside the paid AI edge function", () => {
+    const source = read("supabase/functions/plant-identifier/index.ts");
+
+    expect(source).toContain('auth.getUser()');
+    expect(source).toContain('profile?.subscription_tier !== "pro"');
+    expect(source).toContain('code: "PRO_REQUIRED"');
+  });
+
   it("prevents clients from editing the entitlement column", () => {
     const migration = read(
       "supabase/migrations/20260929190000_lock_profile_entitlements.sql"
