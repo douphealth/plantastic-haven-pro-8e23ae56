@@ -25,17 +25,22 @@ const Register = () => {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error, needsEmailConfirmation } = await signUp(email, password, displayName);
     setLoading(false);
     if (error) {
       toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+    } else if (needsEmailConfirmation) {
+      toast({
+        title: "Confirm your email",
+        description: "Open the confirmation link we sent, then sign in to continue to Pro checkout.",
+      });
+      navigate("/login");
     } else {
-      toast({ title: "Welcome to PlantasticHaven! 🌿", description: "Check your email to confirm your account." });
-      navigate("/dashboard");
+      navigate("/settings");
     }
   };
 
-  const freePerks = ["15 plants on your shelf", "5 AI plant scans/month", "Smart watering reminders", "Community access"];
+  const freePerks = ["Free diagnosis requires no account", "Free rescue care plan", "Free PDF export", "Account is only needed for Pro purchase and workspace"];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
@@ -48,7 +53,7 @@ const Register = () => {
             </span>
           </Link>
           <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Join PlantasticHaven</h1>
-          <p className="text-muted-foreground">Start your free plant care journey</p>
+          <p className="text-muted-foreground">Create an account to unlock the Pro workspace</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-elevated p-8 border border-border space-y-5">
@@ -71,7 +76,7 @@ const Register = () => {
           </div>
 
           <div className="bg-accent/50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-accent-foreground mb-2">Free tier includes:</p>
+            <p className="text-xs font-semibold text-accent-foreground mb-2">Before you pay:</p>
             {freePerks.map((perk) => (
               <div key={perk} className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                 <Check className="w-3 h-3 text-primary" />
@@ -81,25 +86,7 @@ const Register = () => {
           </div>
 
           <Button type="submit" variant="hero" className="w-full h-12 rounded-xl" disabled={loading}>
-            {loading ? "Creating account..." : "Get Started Free"}
-          </Button>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="flex-shrink mx-4 text-muted-foreground text-xs uppercase tracking-wider">or</span>
-            <div className="flex-grow border-t border-border"></div>
-          </div>
-
-          <Button 
-            type="button" 
-            variant="heroOutline" 
-            onClick={() => {
-              localStorage.setItem("guest_mode", "true");
-              window.location.href = "/dashboard";
-            }}
-            className="w-full h-12 rounded-xl border-dashed border-primary text-primary hover:bg-primary/5 flex items-center justify-center gap-2 font-bold"
-          >
-            ⚡ Continue as Guest (No Account Required)
+            {loading ? "Creating account..." : "Continue to Pro"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
