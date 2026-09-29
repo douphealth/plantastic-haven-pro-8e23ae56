@@ -1,22 +1,22 @@
-name: Regenerate dependency lock
+name: CI
 
 on:
   push:
     branches:
-      - "fix/real-auth-stripe-premium-20260929"
+      - main
+      - "fix/**"
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  regenerate-lock:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Checkout branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -24,17 +24,14 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Regenerate lockfile with current npm
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install exact dependencies
+        run: npm ci
 
-      - name: Commit corrected lockfile
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if git diff --cached --quiet; then
-            echo "Lockfile already current."
-            exit 0
-          fi
-          git commit -m "Regenerate npm lockfile"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and regression tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
