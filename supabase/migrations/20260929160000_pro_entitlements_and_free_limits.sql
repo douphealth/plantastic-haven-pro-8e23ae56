@@ -13,6 +13,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS profiles_stripe_customer_id_unique
 REVOKE UPDATE ON public.profiles FROM authenticated;
 GRANT UPDATE (display_name, avatar_url) ON public.profiles TO authenticated;
 
+-- New Stripe identifiers must never be readable from the browser.
+-- Preserve only the safe profile fields required by authenticated UI/community reads.
+REVOKE SELECT ON public.profiles FROM anon, authenticated;
+GRANT SELECT (
+  id,
+  user_id,
+  display_name,
+  avatar_url,
+  subscription_tier,
+  care_streak,
+  total_plants_saved,
+  created_at,
+  updated_at
+) ON public.profiles TO authenticated;
+
 CREATE TABLE IF NOT EXISTS public.stripe_webhook_events (
   event_id TEXT PRIMARY KEY,
   event_type TEXT NOT NULL,
