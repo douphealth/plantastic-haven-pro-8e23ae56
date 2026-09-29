@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -28,7 +29,7 @@ import PlantDetail from "./pages/PlantDetail";
 
 const queryClient = new QueryClient();
 
-const signedIn = (element: React.ReactNode) => (
+const signedIn = (element: ReactNode) => (
   <ProtectedRoute>{element}</ProtectedRoute>
 );
 
