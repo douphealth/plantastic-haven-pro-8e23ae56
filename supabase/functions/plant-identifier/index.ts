@@ -1,31 +1,95 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405);
+  }
 
   try {
-    const { description } = await req.json();
-    if (!description || typeof description !== "string" || description.length > 2000) {
-      return new Response(JSON.stringify({ error: "Please provide a plant description (max 2000 chars)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Authentication required" }, 401);
     }
 
-    const AI_API_KEY = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
-    const AI_BASE_URL = Deno.env.get("AI_BASE_URL") || "https://api.openai.com/v1/chat/completions";
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return json({ error: "Authentication required" }, 401);
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("plant-identifier entitlement lookup failed:", profileError);
+      return json({ error: "Unable to verify Pro access" }, 500);
+    }
+
+    if (profile?.subscription_tier !== "pro") {
+      return json(
+        {
+          error: "Plant identifier requires PlantasticHaven Pro",
+          code: "PRO_REQUIRED",
+        },
+        403
+      );
+    }
+
+    const body = await req.json();
+    const description =
+      typeof body?.description === "string" ? body.description.trim() : "";
+
+    if (!description || description.length > 2000) {
+      return json(
+        { error: "Please provide a plant description (max 2000 chars)" },
+        400
+      );
+    }
+
+    const AI_API_KEY =
+      Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
+    const AI_BASE_URL =
+      Deno.env.get("AI_BASE_URL") ||
+      "https://api.openai.com/v1/chat/completions";
     const AI_MODEL = Deno.env.get("AI_MODEL") || "gpt-4o-mini";
-    if (!AI_API_KEY) throw new Error("OPENAI_API_KEY or AI_API_KEY is not configured");
+
+    if (!AI_API_KEY) {
+      throw new Error("OPENAI_API_KEY or AI_API_KEY is not configured");
+    }
 
     const response = await fetch(AI_BASE_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: "Bearer " + AI_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -33,20 +97,12 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert botanist and plant identifier. When given a plant description, identify the plant and return a JSON object with these fields:
-- name: common name of the plant
-- scientific_name: scientific/Latin name
-- description: brief 2-3 sentence description
-- care_tips: array of 3-5 care tips
-- toxicity: toxicity info for pets and children (e.g. "Non-toxic" or "Toxic to cats and dogs")
-- difficulty: care difficulty level ("Easy", "Moderate", "Hard", "Expert")
-- light: light requirements
-- water: watering frequency
-Return ONLY valid JSON, no markdown or code blocks.`,
+            content:
+              "You are an expert botanist and plant identifier. Identify the plant from the user's description. Return only the requested structured data. Do not invent certainty: when evidence is insufficient, clearly express uncertainty in the description and provide the most likely match.",
           },
           {
             role: "user",
-            content: `Identify this plant: ${description}`,
+            content: "Identify this plant: " + description,
           },
         ],
         tools: [
@@ -63,58 +119,74 @@ Return ONLY valid JSON, no markdown or code blocks.`,
                   description: { type: "string" },
                   care_tips: { type: "array", items: { type: "string" } },
                   toxicity: { type: "string" },
-                  difficulty: { type: "string", enum: ["Easy", "Moderate", "Hard", "Expert"] },
+                  difficulty: {
+                    type: "string",
+                    enum: ["Easy", "Moderate", "Hard", "Expert"],
+                  },
                   light: { type: "string" },
                   water: { type: "string" },
                 },
-                required: ["name", "scientific_name", "description", "care_tips", "toxicity", "difficulty"],
+                required: [
+                  "name",
+                  "scientific_name",
+                  "description",
+                  "care_tips",
+                  "toxicity",
+                  "difficulty",
+                ],
                 additionalProperties: false,
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "identify_plant" } },
+        tool_choice: {
+          type: "function",
+          function: { name: "identify_plant" },
+        },
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json(
+          { error: "Rate limit exceeded. Please try again in a moment." },
+          429
+        );
       }
+
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please try again later." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json(
+          { error: "AI credits exhausted. Please try again later." },
+          402
+        );
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+
+      const responseText = await response.text();
+      console.error(
+        "AI gateway error:",
+        response.status,
+        responseText.slice(0, 500)
+      );
       throw new Error("AI identification failed");
     }
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+
     if (toolCall?.function?.arguments) {
-      const result = JSON.parse(toolCall.function.arguments);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(JSON.parse(toolCall.function.arguments));
     }
 
-    // Fallback: try parsing content
     const content = data.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(content);
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("plant-identifier error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json(JSON.parse(content));
+  } catch (error) {
+    console.error("plant-identifier error:", error);
+    return json(
+      {
+        error:
+          error instanceof Error ? error.message : "Unable to identify plant",
+      },
+      500
+    );
   }
 });
