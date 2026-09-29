@@ -317,3 +317,15 @@ DROP TRIGGER IF EXISTS sync_community_post_likes_count ON public.community_post_
 CREATE TRIGGER sync_community_post_likes_count
 AFTER INSERT OR DELETE ON public.community_post_likes
 FOR EACH ROW EXECUTE FUNCTION private.sync_community_post_likes_count();
+
+
+-- Idempotency log for signed Stripe webhook deliveries.
+CREATE TABLE IF NOT EXISTS public.stripe_webhook_events (
+  event_id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  processed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.stripe_webhook_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.stripe_webhook_events FROM anon, authenticated;
+GRANT ALL ON TABLE public.stripe_webhook_events TO service_role;
