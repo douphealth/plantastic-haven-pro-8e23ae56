@@ -34,10 +34,10 @@ jobs:
 
       - name: Typecheck Supabase Edge Functions
         run: |
-          deno check supabase/functions/create-payment/index.ts
-          deno check supabase/functions/check-payment/index.ts
-          deno check supabase/functions/stripe-webhook/index.ts
-          deno check supabase/functions/plant-identifier/index.ts
+          deno check --node-modules-dir=auto supabase/functions/create-payment/index.ts
+          deno check --node-modules-dir=auto supabase/functions/check-payment/index.ts
+          deno check --node-modules-dir=auto supabase/functions/stripe-webhook/index.ts
+          deno check --node-modules-dir=auto supabase/functions/plant-identifier/index.ts
 
       - name: Unit tests
         run: npm test
