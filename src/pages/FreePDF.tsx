@@ -76,7 +76,7 @@ const FreePDF = () => {
 
   // Trigger print
   const handlePrintTrigger = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: carePlan ? `${carePlan.plantName.replace(/\s+/g, '-')}-Care-Guide` : "PlantasticHaven-Care-Guide",
     onAfterPrint: () => {
       setPdfGenerated(true);
@@ -419,7 +419,7 @@ const FreePDF = () => {
                     )}
 
                     {/* Footer Cover Info */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", display: "flex", justifyBetween: "space-between", fontSize: "11px", color: "#64748b" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b" }}>
                       <div>
                         <strong>Authorized:</strong> Certified Botanical Analytics
                       </div>
@@ -602,7 +602,7 @@ const FreePDF = () => {
                     </div>
 
                     {/* Footer page number */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyBetween: "space-between", fontSize: "10px", color: "#94a3b8" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#94a3b8" }}>
                       <span>PlantasticHaven Care Guide</span>
                       <span>Page 3 of 4</span>
                     </div>
@@ -694,7 +694,7 @@ const FreePDF = () => {
                     </div>
 
                     {/* Footer page number */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyBetween: "space-between", fontSize: "10px", color: "#94a3b8" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#94a3b8" }}>
                       <span>PlantasticHaven Care Guide</span>
                       <span>Page 4 of 4</span>
                     </div>
