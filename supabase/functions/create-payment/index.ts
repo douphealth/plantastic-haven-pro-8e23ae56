@@ -31,12 +31,13 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
     const proPriceId = Deno.env.get("STRIPE_PRO_PRICE_ID");
     const appUrl =
       Deno.env.get("APP_URL") || "https://procare.plantastichaven.com";
 
-    if (!supabaseUrl || !anonKey || !stripeSecret || !proPriceId) {
+    if (!supabaseUrl || !anonKey || !serviceRoleKey || !stripeSecret || !proPriceId) {
       console.error("Missing required payment configuration");
       return json({ error: "Payment service is not configured" }, 503);
     }
@@ -54,7 +55,47 @@ serve(async (req) => {
     }
 
     const user = userData.user;
+
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Profile lookup failed", profileError);
+      return json({ error: "Unable to verify your current plan" }, 500);
+    }
+
+    if (profile?.subscription_tier === "pro") {
+      return json(
+        { error: "Pro is already active on this account", code: "ALREADY_PRO" },
+        409
+      );
+    }
+
     const stripe = new Stripe(stripeSecret);
+    const proPrice = await stripe.prices.retrieve(proPriceId);
+
+    if (
+      !proPrice.active ||
+      proPrice.type !== "one_time" ||
+      proPrice.currency.toLowerCase() !== "usd" ||
+      proPrice.unit_amount !== 799
+    ) {
+      console.error("Configured Pro price is not the expected active $7.99 USD one-time price", {
+        priceId: proPrice.id,
+        active: proPrice.active,
+        type: proPrice.type,
+        currency: proPrice.currency,
+        unitAmount: proPrice.unit_amount,
+      });
+      return json({ error: "Pro checkout is temporarily unavailable" }, 503);
+    }
 
     const existingCustomers = await stripe.customers.list({
       email: user.email,
