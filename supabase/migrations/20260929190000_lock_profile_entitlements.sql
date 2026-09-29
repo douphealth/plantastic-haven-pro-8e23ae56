@@ -127,6 +127,13 @@ USING (
 );
 
 -- Anyone may read community posts, but only verified Pro users can participate.
+-- The likes_count column is server-maintained and cannot be forged by clients.
+REVOKE INSERT, UPDATE ON TABLE public.community_posts FROM authenticated;
+GRANT INSERT (user_id, title, content, image_url, category)
+  ON TABLE public.community_posts TO authenticated;
+GRANT UPDATE (title, content, image_url, category)
+  ON TABLE public.community_posts TO authenticated;
+
 DROP POLICY IF EXISTS "Authenticated users can create posts" ON public.community_posts;
 DROP POLICY IF EXISTS "Users can update their own posts" ON public.community_posts;
 DROP POLICY IF EXISTS "Users can delete their own posts" ON public.community_posts;
@@ -296,7 +303,11 @@ BEGIN
   )
   WHERE id = target_post_id;
 
-  RETURN COALESCE(NEW, OLD);
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+
+  RETURN NEW;
 END;
 $$;
 
