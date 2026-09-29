@@ -51,6 +51,19 @@ describe("payment and entitlement security invariants", () => {
     expect(app).toContain("<PremiumRoute>");
   });
 
+  it("uses a signed Stripe webhook for asynchronous entitlement lifecycle", () => {
+    const source = read("supabase/functions/stripe-webhook/index.ts");
+    const config = read("supabase/config.toml");
+
+    expect(source).toContain("constructEventAsync");
+    expect(source).toContain('req.headers.get("stripe-signature")');
+    expect(source).toContain('"checkout.session.async_payment_succeeded"');
+    expect(source).toContain('"charge.refunded"');
+    expect(source).toContain('"charge.dispute.created"');
+    expect(config).toContain("[functions.stripe-webhook]");
+    expect(config).toContain("verify_jwt = false");
+  });
+
   it("requires Pro inside the paid AI edge function", () => {
     const source = read("supabase/functions/plant-identifier/index.ts");
 
