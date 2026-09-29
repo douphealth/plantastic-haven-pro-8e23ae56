@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PricingSection from "@/components/PricingSection";
 import { Button } from "@/components/ui/button";
 import { 
   Leaf, 
@@ -203,6 +204,7 @@ const Index = () => {
         </div>
       </section>
 
+      <PricingSection />
       <Footer />
     </div>
   );
