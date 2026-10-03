@@ -20,6 +20,7 @@ const Community = () => {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
 
   const fetchPosts = async () => {
     const { data } = await supabase
@@ -29,6 +30,17 @@ const Community = () => {
       .limit(50);
     const postsData = data || [];
     setPosts(postsData);
+
+    if (user && postsData.length > 0) {
+      const { data: likesData } = await supabase
+        .from("community_post_likes")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postsData.map((post) => post.id));
+      setLikedPostIds(new Set((likesData || []).map((like) => like.post_id)));
+    } else {
+      setLikedPostIds(new Set());
+    }
 
     const userIds = [...new Set(postsData.map((p: any) => p.user_id))];
     if (userIds.length > 0) {
@@ -65,29 +77,52 @@ const Community = () => {
   };
 
   const handleLike = async (postId: string, currentLikes: number) => {
-    if (!user) {
-      toast({ title: "Sign in to like posts", variant: "destructive" });
-      return;
-    }
-    if (likingIds.has(postId)) return;
-    setLikingIds((prev) => new Set(prev).add(postId));
+    if (!user || likingIds.has(postId)) return;
 
-    // Optimistic update
+    const wasLiked = likedPostIds.has(postId);
+    const nextLikes = Math.max(0, currentLikes + (wasLiked ? -1 : 1));
+
+    setLikingIds((prev) => new Set(prev).add(postId));
+    setLikedPostIds((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes + 1 } : p))
+      prev.map((post) =>
+        post.id === postId ? { ...post, likes_count: nextLikes } : post
+      )
     );
 
-    const { error } = await supabase
-      .from("community_posts")
-      .update({ likes_count: currentLikes + 1 })
-      .eq("id", postId);
+    const result = wasLiked
+      ? await supabase
+          .from("community_post_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", user.id)
+      : await supabase.from("community_post_likes").insert({
+          post_id: postId,
+          user_id: user.id,
+        });
 
-    if (error) {
-      // Revert
+    if (result.error) {
+      setLikedPostIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
       setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes } : p))
+        prev.map((post) =>
+          post.id === postId ? { ...post, likes_count: currentLikes } : post
+        )
       );
-      toast({ title: "Like failed", variant: "destructive" });
+      toast({
+        title: "Like failed",
+        description: result.error.message,
+        variant: "destructive",
+      });
     }
 
     setLikingIds((prev) => {
@@ -226,7 +261,7 @@ const Community = () => {
                       disabled={likingIds.has(post.id)}
                       className="flex items-center gap-1 hover:text-bloom transition-colors disabled:opacity-50"
                     >
-                      <Heart className={`w-3.5 h-3.5 ${post.likes_count > 0 ? "fill-bloom text-bloom" : ""}`} /> {post.likes_count}
+                      <Heart className={`w-3.5 h-3.5 ${likedPostIds.has(post.id) ? "fill-bloom text-bloom" : ""}`} /> {post.likes_count}
                     </button>
                     <span>{new Date(post.created_at).toLocaleDateString()}</span>
                   </div>
