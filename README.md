@@ -34,7 +34,7 @@ Set:
 The payment functions require:
 
 - `STRIPE_SECRET_KEY`
-- `STRIPE_PRO_PRICE_ID=price_1TJZHkGCqwm95OGXjymU2Vuw`
+- `STRIPE_PRO_PRICE_ID=price_1UMt4LByiix0wtyT4iQ0dYbc`
 - `STRIPE_WEBHOOK_SECRET=whsec_...`
 - `APP_URL=https://procare.plantastichaven.com`
 
