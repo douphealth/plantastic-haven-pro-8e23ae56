@@ -7,7 +7,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const PRO_PRICE_ID =
   Deno.env.get("STRIPE_PRO_PRICE_ID") ||
-  "price_1TJZHkGCqwm95OGXjymU2Vuw";
+  "price_1UMt4LByiix0wtyT4iQ0dYbc";
 
 if (!stripeSecret || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
   throw new Error("Stripe webhook environment is not fully configured");
