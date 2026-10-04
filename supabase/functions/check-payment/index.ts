@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const PRO_PRICE_ID =
   Deno.env.get("STRIPE_PRO_PRICE_ID") ||
-  "price_1TJZHkGCqwm95OGXjymU2Vuw";
+  "price_1UMt4LByiix0wtyT4iQ0dYbc";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
