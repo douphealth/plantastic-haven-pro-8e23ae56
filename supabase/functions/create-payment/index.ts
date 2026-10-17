@@ -83,6 +83,9 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      // Persist first-time buyers as Stripe Customers so lifetime access can
+      // be recovered even if the success redirect or webhook is missed.
+      customer_creation: customerId ? undefined : "always",
       client_reference_id: user.id,
       line_items: [{ price: PRO_PRICE_ID, quantity: 1 }],
       mode: "payment",
