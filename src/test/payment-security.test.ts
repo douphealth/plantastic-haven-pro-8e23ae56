@@ -25,6 +25,7 @@ describe("payment and entitlement security invariants", () => {
     expect(source).not.toContain("const { priceId }");
     expect(source).toContain('metadata: {');
     expect(source).toContain('entitlement: "pro"');
+    expect(source).toContain('customer_creation: customerId ? undefined : "always"');
   });
 
   it("verifies payment, user ownership, and the exact Pro line item", () => {
