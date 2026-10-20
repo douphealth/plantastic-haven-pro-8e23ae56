@@ -36,6 +36,14 @@ describe("payment and entitlement security invariants", () => {
     expect(source).toContain("item.price?.id === PRO_PRICE_ID");
   });
 
+  it("does not regrant Pro after refunds or disputes during restoration", () => {
+    const source = read("supabase/functions/check-payment/index.ts");
+    expect(source).toContain('expand: ["payment_intent.latest_charge"]');
+    expect(source).toContain("charge.refunded");
+    expect(source).toContain("charge.disputed");
+    expect(source).toContain("charge.amount_refunded > 0");
+  });
+
   it("protects paid application routes", () => {
     const app = read("src/App.tsx");
 
