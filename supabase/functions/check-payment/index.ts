@@ -65,23 +65,34 @@ serve(async (req) => {
         ? body.sessionId
         : null;
 
-    const sessionQualifies = async (
-      session: any
-    ): Promise<boolean> => {
+    const sessionQualifies = async (candidate: Stripe.Checkout.Session): Promise<boolean> => {
+      // Re-fetch each candidate with charge details. Completed Checkout status
+      // alone remains "paid" after refunds and chargebacks.
+      const session = await stripe.checkout.sessions.retrieve(candidate.id, {
+        expand: ["payment_intent.latest_charge"],
+      });
       if (
+        session.mode !== "payment" ||
         session.status !== "complete" ||
         session.payment_status !== "paid" ||
+        session.metadata?.entitlement !== "pro" ||
         session.metadata?.user_id !== user.id
       ) {
         return false;
       }
-
-      const lineItems = await stripe.checkout.sessions.listLineItems(
-        session.id,
-        { limit: 100 }
+      const intent = session.payment_intent;
+      if (!intent || typeof intent === "string") return false;
+      const charge = intent.latest_charge;
+      if (!charge || typeof charge === "string") return false;
+      // Full or partial refunds/disputes make this one-time purchase ineligible
+      // for automatic entitlement restoration.
+      if (charge.refunded || charge.disputed || charge.amount_refunded > 0) {
+        return false;
+      }
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {limit:100});
+      return lineItems.data.some(item =>
+        item.price?.id === PRO_PRICE_ID && (item.quantity ?? 0) > 0
       );
-
-      return lineItems.data.some((item) => item.price?.id === PRO_PRICE_ID);
     };
 
     let hasPro = false;
