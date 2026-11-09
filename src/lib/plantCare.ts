@@ -23,6 +23,7 @@ type PlantWrite = {
   last_watered: string;
   next_water_date: string;
   water_interval_days?: number;
+  plant_id?: string | null;
 };
 
 export async function insertGardenPlant(input: {
@@ -32,6 +33,7 @@ export async function insertGardenPlant(input: {
   room?: string;
   notes?: string;
   waterIntervalDays: number;
+  plantId?: string | null;
 }) {
   const interval = clampWaterInterval(input.waterIntervalDays);
   const payload: PlantWrite = {
@@ -44,13 +46,15 @@ export async function insertGardenPlant(input: {
     last_watered: new Date().toISOString(),
     next_water_date: nextWaterIso(interval),
     water_interval_days: interval,
+    plant_id: input.plantId || null,
   };
 
-  const first = await supabase.from("user_plants").insert(payload);
+  const first = await supabase.from("user_plants").insert(payload).select("id");
   if (!first.error) return first;
+  if (!first.error.message.includes("water_interval_days")) return first;
 
   const { water_interval_days: _ignored, ...withoutInterval } = payload;
-  return supabase.from("user_plants").insert(withoutInterval);
+  return supabase.from("user_plants").insert(withoutInterval).select("id");
 }
 
 export async function recordWatering(plantId: string, intervalDays: number) {

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import { Link } from "react-router-dom";
 import { recordWatering } from "@/lib/plantCare";
+import WateringReminders from "@/components/shared/WateringReminders";
 
 const CareCalendar = () => {
   const { user } = useAuth();
@@ -94,8 +95,10 @@ const CareCalendar = () => {
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">Care Calendar</h1>
-          <p className="text-muted-foreground text-sm">Keep your plants happy with timely care</p>
+          <p className="text-muted-foreground text-sm">Dates come from the interval saved on each plant</p>
         </div>
+
+        {!loading && <WateringReminders plants={plants} />}
 
         {/* Summary stats */}
         {!loading && plants.length > 0 && (

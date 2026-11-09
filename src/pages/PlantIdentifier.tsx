@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Scan, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -6,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
 import { messageFromFunctionError } from "@/lib/functionError";
+import { useAuth } from "@/contexts/AuthContext";
+import { WATER_INTERVALS, insertGardenPlant } from "@/lib/plantCare";
+import { matchCatalogPlant, toxicityLabel, type CatalogPlant } from "@/lib/plantCatalog";
 
 const fileToJpegDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -42,11 +46,29 @@ const fileToJpegDataUrl = (file: File) =>
   });
 
 const PlantIdentifier = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [catalog, setCatalog] = useState<CatalogPlant[]>([]);
+  const [intervalDays, setIntervalDays] = useState(7);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    supabase
+      .from("plants")
+      .select("id, name, scientific_name, common_names, light_needs, water_frequency_days, water_guidance, care_source, toxicity_pets, toxicity_children, humidity, description, care_difficulty")
+      .then(({ data }) => setCatalog((data || []) as CatalogPlant[]));
+  }, []);
+
+  const matched = result ? matchCatalogPlant(catalog, result) : null;
+
+  useEffect(() => {
+    if (matched?.water_frequency_days) setIntervalDays(matched.water_frequency_days);
+  }, [matched?.id, matched?.water_frequency_days]);
 
   const onPhoto = async (file?: File) => {
     if (!file) {
@@ -87,6 +109,55 @@ const PlantIdentifier = () => {
       });
     }
     setLoading(false);
+  };
+
+  const saveToGarden = async () => {
+    if (!user || !result?.name) return;
+    setSaving(true);
+    const careNotes = [
+      result.description,
+      Array.isArray(result.care_tips) ? result.care_tips.filter(Boolean).join(" ") : "",
+      result.toxicity ? `Identifier toxicity note: ${result.toxicity}` : "",
+      matched?.water_guidance ? `Catalog water guidance: ${matched.water_guidance}` : "",
+      "The identifier is a best guess. Sourced light and toxicity below come from the catalog match only.",
+    ].filter(Boolean).join("\n\n");
+
+    let photoUrl: string | null = null;
+    if (image) {
+      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+      const blob = await fetch(image).then((response) => response.blob());
+      const upload = await supabase.storage.from("plant-photos").upload(path, blob, {
+        contentType: "image/jpeg",
+        upsert: false,
+      });
+      if (!upload.error) {
+        photoUrl = supabase.storage.from("plant-photos").getPublicUrl(path).data.publicUrl;
+      }
+    }
+
+    const inserted = await insertGardenPlant({
+      userId: user.id,
+      nickname: result.name,
+      location: "Indoor",
+      notes: careNotes,
+      waterIntervalDays: intervalDays,
+      plantId: matched?.id || null,
+    });
+    setSaving(false);
+    if (inserted.error) {
+      toast({ title: "Could not save this plant", description: inserted.error.message, variant: "destructive" });
+      return;
+    }
+    if (photoUrl && inserted.data?.[0]?.id) {
+      await supabase.from("user_plants").update({ photo_url: photoUrl }).eq("id", inserted.data[0].id);
+    }
+    toast({
+      title: matched ? "Saved with catalog care" : "Saved to your garden",
+      description: matched
+        ? "Light and toxicity on the plant page come from the matched catalog entry."
+        : "No catalog entry matched this name, so the reminder interval is the one you chose.",
+    });
+    navigate("/my-garden");
   };
 
   return (
@@ -180,6 +251,38 @@ const PlantIdentifier = () => {
             {result.difficulty && (
               <div className="text-xs text-muted-foreground">Care difficulty: <span className="font-semibold text-card-foreground">{result.difficulty}</span></div>
             )}
+
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h3 className="font-heading font-semibold text-foreground">Save to your garden</h3>
+              {matched ? (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Matched catalog entry: {matched.name} ({matched.scientific_name}).</p>
+                  <p>Light: {matched.light_needs}</p>
+                  <p>Water: {matched.water_guidance}</p>
+                  <p>{toxicityLabel(matched)}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No catalog species matched this name exactly. The reminder interval below is your choice, not a sourced schedule. The identifier text is saved as a note.
+                </p>
+              )}
+              <label className="block text-sm" htmlFor="save-interval">
+                Reminder every
+                <select
+                  id="save-interval"
+                  value={intervalDays}
+                  onChange={(event) => setIntervalDays(Number(event.target.value))}
+                  className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {WATER_INTERVALS.map((days) => (
+                    <option key={days} value={days}>{days} days</option>
+                  ))}
+                </select>
+              </label>
+              <Button type="button" variant="hero" onClick={saveToGarden} disabled={saving} className="rounded-xl">
+                {saving ? "Saving..." : "Save this plant"}
+              </Button>
+            </div>
           </div>
         )}
       </div>

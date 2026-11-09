@@ -142,6 +142,7 @@ export type Database = {
           common_names: string[] | null
           common_problems: string[] | null
           created_at: string
+          care_source: string | null
           description: string | null
           humidity: string | null
           id: string
@@ -154,13 +155,15 @@ export type Database = {
           temp_min: number | null
           toxicity_children: boolean | null
           toxicity_pets: boolean | null
-          water_frequency_days: number
+          water_frequency_days: number | null
+          water_guidance: string | null
         }
         Insert: {
           care_difficulty?: string
           category?: string | null
           common_names?: string[] | null
           common_problems?: string[] | null
+          care_source?: string | null
           created_at?: string
           description?: string | null
           humidity?: string | null
@@ -174,13 +177,15 @@ export type Database = {
           temp_min?: number | null
           toxicity_children?: boolean | null
           toxicity_pets?: boolean | null
-          water_frequency_days?: number
+          water_frequency_days?: number | null
+          water_guidance?: string | null
         }
         Update: {
           care_difficulty?: string
           category?: string | null
           common_names?: string[] | null
           common_problems?: string[] | null
+          care_source?: string | null
           created_at?: string
           description?: string | null
           humidity?: string | null
@@ -194,7 +199,8 @@ export type Database = {
           temp_min?: number | null
           toxicity_children?: boolean | null
           toxicity_pets?: boolean | null
-          water_frequency_days?: number
+          water_frequency_days?: number | null
+          water_guidance?: string | null
         }
         Relationships: []
       }

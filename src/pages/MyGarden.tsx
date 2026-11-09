@@ -10,6 +10,7 @@ import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
 import { Link } from "react-router-dom";
 import { WATER_INTERVALS, insertGardenPlant, recordWatering } from "@/lib/plantCare";
+import { toxicityLabel, type CatalogPlant } from "@/lib/plantCatalog";
 
 const MyGarden = () => {
   const { user } = useAuth();
@@ -17,7 +18,15 @@ const MyGarden = () => {
   const [plants, setPlants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ nickname: "", location: "Indoor", room: "", notes: "", waterIntervalDays: 7 });
+  const [catalog, setCatalog] = useState<CatalogPlant[]>([]);
+  const [form, setForm] = useState({
+    nickname: "",
+    location: "Indoor",
+    room: "",
+    notes: "",
+    waterIntervalDays: 7,
+    plantId: "",
+  });
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchPlants = async () => {
@@ -33,6 +42,26 @@ const MyGarden = () => {
 
   useEffect(() => { fetchPlants(); }, [user]);
 
+  useEffect(() => {
+    supabase
+      .from("plants")
+      .select("id, name, scientific_name, common_names, light_needs, water_frequency_days, water_guidance, care_source, toxicity_pets, toxicity_children, humidity, description, care_difficulty")
+      .order("name")
+      .then(({ data }) => setCatalog((data || []) as CatalogPlant[]));
+  }, []);
+
+  const selectedCatalog = catalog.find((plant) => plant.id === form.plantId) || null;
+
+  const chooseSpecies = (plantId: string) => {
+    const species = catalog.find((plant) => plant.id === plantId);
+    setForm((current) => ({
+      ...current,
+      plantId,
+      nickname: current.nickname || species?.name || "",
+      waterIntervalDays: species?.water_frequency_days || current.waterIntervalDays,
+    }));
+  };
+
   const addPlant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -43,12 +72,13 @@ const MyGarden = () => {
       room: form.room,
       notes: form.notes,
       waterIntervalDays: form.waterIntervalDays,
+      plantId: form.plantId || null,
     });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Plant added" });
-      setForm({ nickname: "", location: "Indoor", room: "", notes: "", waterIntervalDays: 7 });
+      setForm({ nickname: "", location: "Indoor", room: "", notes: "", waterIntervalDays: 7, plantId: "" });
       setShowAdd(false);
       fetchPlants();
     }
@@ -91,6 +121,30 @@ const MyGarden = () => {
               <h2 className="font-heading text-xl font-semibold">Add New Plant</h2>
               <button type="button" onClick={() => setShowAdd(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="species">Species from the catalog</Label>
+              <select
+                id="species"
+                value={form.plantId}
+                onChange={(event) => chooseSpecies(event.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Not in the catalog</option>
+                {catalog.map((plant) => (
+                  <option key={plant.id} value={plant.id}>
+                    {plant.name}{plant.scientific_name ? ` (${plant.scientific_name})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedCatalog && (
+                <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+                  <p><span className="font-medium text-foreground">Light: </span>{selectedCatalog.light_needs}</p>
+                  <p><span className="font-medium text-foreground">Water: </span>{selectedCatalog.water_guidance}</p>
+                  <p>{toxicityLabel(selectedCatalog)}</p>
+                  {selectedCatalog.care_source && <p>{selectedCatalog.care_source}</p>}
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nickname *</Label>
@@ -114,7 +168,7 @@ const MyGarden = () => {
                 <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any notes..." />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="water-interval">Water about every</Label>
+                <Label htmlFor="water-interval">Reminder every</Label>
                 <select
                   id="water-interval"
                   value={form.waterIntervalDays}
@@ -125,6 +179,11 @@ const MyGarden = () => {
                     <option key={days} value={days}>{days} days</option>
                   ))}
                 </select>
+                <p className="text-xs text-muted-foreground">
+                  {selectedCatalog?.water_frequency_days
+                    ? "This number is the interval published by the catalog source. You can change the reminder."
+                    : "The catalog does not publish a number of days for this plant, so this reminder interval is your choice."}
+                </p>
               </div>
             </div>
             <Button type="submit" variant="hero" className="rounded-xl">Add to Garden</Button>

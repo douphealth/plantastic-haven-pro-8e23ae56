@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/shared/AppLayout";
 import { loadProgress, nextIncomplete } from "@/lib/lessons";
+import WateringReminders from "@/components/shared/WateringReminders";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -113,6 +114,8 @@ const Dashboard = () => {
             </span>
           )}
         </div>
+
+        <WateringReminders plants={allPlants} />
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

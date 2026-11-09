@@ -24,7 +24,7 @@ const PlantDetail = () => {
     if (!user || !id) return;
     const load = async () => {
       const [plantRes, entriesRes] = await Promise.all([
-        supabase.from("user_plants").select("*").eq("id", id).eq("user_id", user.id).single(),
+        supabase.from("user_plants").select("*, plants(*)").eq("id", id).eq("user_id", user.id).single(),
         supabase.from("plant_journal_entries").select("*").eq("user_plant_id", id).eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
       setPlant(plantRes.data);
@@ -145,6 +145,15 @@ const PlantDetail = () => {
               <div className="text-sm font-semibold text-card-foreground">{plant.next_water_date ? new Date(plant.next_water_date).toLocaleDateString() : "Not set"}</div>
             </div>
           </div>
+
+          {plant.plants && (
+            <div className="mt-4 rounded-xl bg-muted/40 p-3 text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">{plant.plants.name}{plant.plants.scientific_name ? ` · ${plant.plants.scientific_name}` : ""}</p>
+              <p>Light: {plant.plants.light_needs}</p>
+              {plant.plants.water_guidance && <p>Water: {plant.plants.water_guidance}</p>}
+              {plant.plants.care_source && <p className="text-xs">{plant.plants.care_source}</p>}
+            </div>
+          )}
 
           {plant.notes && <p className="mt-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">{plant.notes}</p>}
         </div>

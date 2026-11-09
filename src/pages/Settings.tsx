@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { messageFromFunctionError } from "@/lib/functionError";
+import { REMINDER_PREFERENCE_KEY } from "@/lib/reminders";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
@@ -26,6 +27,9 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [remindersOn, setRemindersOn] = useState(
+    () => localStorage.getItem(REMINDER_PREFERENCE_KEY) === "on"
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +130,37 @@ const Settings = () => {
       });
       setUpgrading(false);
     }
+  };
+
+  const enableReminders = async () => {
+    if (typeof Notification === "undefined") {
+      toast({
+        title: "This browser cannot show notifications",
+        description: "The in-app list still appears when a plant is overdue.",
+      });
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      localStorage.setItem(REMINDER_PREFERENCE_KEY, "off");
+      setRemindersOn(false);
+      toast({
+        title: "Browser notifications stay off",
+        description: "You can still see overdue plants in the app.",
+      });
+      return;
+    }
+    localStorage.setItem(REMINDER_PREFERENCE_KEY, "on");
+    setRemindersOn(true);
+    toast({
+      title: "Browser reminders on",
+      description: "A notification can appear once a day per overdue plant while this site is open.",
+    });
+  };
+
+  const disableReminders = () => {
+    localStorage.setItem(REMINDER_PREFERENCE_KEY, "off");
+    setRemindersOn(false);
   };
 
   const isPro = profile?.subscription_tier === "pro";
@@ -277,6 +312,26 @@ const Settings = () => {
                 </p>
               </div>
             </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-3">
+          <h2 className="font-heading text-xl font-semibold text-card-foreground">
+            Watering reminders
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Overdue plants are listed in the app whenever you open the dashboard or care calendar.
+            A browser notification is optional and only appears while this site is open in this browser,
+            at most once a day for each overdue plant. Nothing is emailed.
+          </p>
+          {remindersOn ? (
+            <Button type="button" variant="outline" onClick={disableReminders} className="rounded-xl">
+              Turn off browser notifications
+            </Button>
+          ) : (
+            <Button type="button" variant="hero" onClick={enableReminders} className="rounded-xl">
+              Allow browser notifications
+            </Button>
           )}
         </div>
 
