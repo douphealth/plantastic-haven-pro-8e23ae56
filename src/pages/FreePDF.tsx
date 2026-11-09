@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { normalizeCarePlan } from "@/lib/diagnosis";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useReactToPrint } from "react-to-print";
 import {
@@ -12,16 +12,13 @@ import {
   Leaf,
   Palette,
   FileText,
-  Mail,
   AlertTriangle,
   ArrowRight,
-  CheckCircle,
   Clock,
   Sparkles,
   ShieldCheck,
   Calendar,
   ExternalLink,
-  QrCode
 } from "lucide-react";
 
 // Accent color palettes
@@ -68,21 +65,20 @@ const FreePDF = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [accentColor, setAccentColor] = useState<PaletteKey>("emerald");
   const [customNotes, setCustomNotes] = useState("");
-  const [email, setEmail] = useState("");
-  const [emailSubmitted, setEmailSubmitted] = useState(false);
-  const [pdfGenerated, setPdfGenerated] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
 
   // Trigger print
   const handlePrintTrigger = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: carePlan ? `${carePlan.plantName.replace(/\s+/g, '-')}-Care-Guide` : "PlantasticHaven-Care-Guide",
+    contentRef: printRef,
+    documentTitle: () =>
+      carePlan
+        ? `${carePlan.plantName.replace(/\s+/g, "-")}-Care-Guide`
+        : "PlantasticHaven-Care-Guide",
     onAfterPrint: () => {
-      setPdfGenerated(true);
       toast({
         title: "Print layout opened! 📄",
-        description: "Save as PDF or print. Join our optional newsletter below for monthly care tips.",
+        description: "Use the print dialog to save a PDF. Nothing is uploaded.",
         variant: "default"
       });
     }
@@ -91,11 +87,18 @@ const FreePDF = () => {
   useEffect(() => {
     const saved = localStorage.getItem("plantastichaven_care_plan");
     if (saved) {
-      setCarePlan(JSON.parse(saved));
-      setIsPreviewMode(false);
-    } else {
-      // Default fallback mock care plan if they came directly to PDF page
-      setIsPreviewMode(true);
+      try {
+        const plan = normalizeCarePlan(JSON.parse(saved));
+        if (plan) {
+          setCarePlan(plan);
+          setIsPreviewMode(false);
+          return;
+        }
+      } catch {
+        // Fall through to the labeled sample guide.
+      }
+    }
+    setIsPreviewMode(true);
       setCarePlan({
         reportId: "PH-SAMPLE",
         date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -125,26 +128,7 @@ const FreePDF = () => {
           { title: "Soil Architecture: Creating the Ultimate Mix", link: "/guides?article=survival-guide&day=2" }
         ]
       });
-    }
   }, []);
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes("@")) {
-      toast({
-        title: "Invalid Email Address 📧",
-        description: "Please enter a valid email to subscribe.",
-        variant: "destructive"
-      });
-      return;
-    }
-    setEmailSubmitted(true);
-    toast({
-      title: "Successfully Subscribed! 🌿",
-      description: "Welcome! We will send you monthly seasonal care checklists.",
-      variant: "default"
-    });
-  };
 
   // Generate 4-week calendar schedule visualization
   const renderCalendarGrid = (frequency: string, color: string) => {
@@ -198,6 +182,17 @@ const FreePDF = () => {
 
   const selectedPalette = COLOR_PALETTES[accentColor];
 
+  if (!carePlan) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-grow pt-24 text-center text-sm text-muted-foreground">
+          Preparing the PDF preview…
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -223,7 +218,7 @@ const FreePDF = () => {
             {/* Customization Options (Left side - 4 cols) */}
             <div className="lg:col-span-4 bg-card border border-border rounded-2xl p-6 shadow-card space-y-6">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold font-heading text-foreground">SOTA PDF Builder</h2>
+                <h2 className="text-xl font-bold font-heading text-foreground">PDF options</h2>
                 <p className="text-xs text-muted-foreground font-body">
                   Personalize the styling and add notes before printing.
                 </p>
@@ -279,40 +274,16 @@ const FreePDF = () => {
                 </Button>
               </div>
 
-              {/* Optional Email Subscribe Box (shown always, but highlighted after export) */}
-              <div className={`p-4 rounded-xl border transition-all duration-300 ${
-                pdfGenerated 
-                  ? "bg-primary/5 border-primary/20 scale-[1.02]" 
-                  : "bg-background border-border"
-              }`}>
-                {!emailSubmitted ? (
-                  <form onSubmit={handleEmailSubmit} className="space-y-3">
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 font-heading">
-                      <Mail className="w-3.5 h-3.5 text-primary" /> Optional: Care Reminders
-                    </h4>
-                    <p className="text-xxs text-muted-foreground font-body leading-relaxed">
-                      Get monthly seasonal plant checklists. No login required, unsubscribe anytime.
-                    </p>
-                    <div className="flex gap-2">
-                      <Input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-9 text-xs rounded-lg border-border"
-                      />
-                      <Button type="submit" size="sm" className="rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/95">
-                        Join
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="text-center space-y-1">
-                    <CheckCircle className="w-5 h-5 text-primary mx-auto" />
-                    <p className="text-xs font-bold text-primary">Subscribed!</p>
-                    <p className="text-xxs text-muted-foreground font-body">We'll email you monthly care tips.</p>
-                  </div>
-                )}
+              <div className="p-4 rounded-xl border bg-background border-border">
+                <h4 className="text-xs font-bold text-foreground font-heading">
+                  This PDF stays on your device
+                </h4>
+                <p className="text-xxs text-muted-foreground font-body leading-relaxed mt-1">
+                  Printing does not email anyone and does not create an account. To keep the plant on a watering calendar, save the care plan to a Pro garden.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-3 rounded-lg text-xs">
+                  <Link to="/care-plan">Open care plan</Link>
+                </Button>
               </div>
             </div>
 
@@ -419,7 +390,7 @@ const FreePDF = () => {
                     )}
 
                     {/* Footer Cover Info */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", display: "flex", justifyBetween: "space-between", fontSize: "11px", color: "#64748b" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b" }}>
                       <div>
                         <strong>Authorized:</strong> Certified Botanical Analytics
                       </div>
@@ -602,7 +573,7 @@ const FreePDF = () => {
                     </div>
 
                     {/* Footer page number */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyBetween: "space-between", fontSize: "10px", color: "#94a3b8" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#94a3b8" }}>
                       <span>PlantasticHaven Care Guide</span>
                       <span>Page 3 of 4</span>
                     </div>
@@ -625,14 +596,14 @@ const FreePDF = () => {
                       </div>
 
                       {/* SOTA Recommended Guides cards with Absolute Clickable URLs and vector QR codes */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 0.5fr", gap: "20px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px" }}>
+                      <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px" }}>
                         <div>
                           <h3 style={{ fontFamily: "Playfair Display, Georgia, serif", fontSize: "15px", fontWeight: 700, color: "#1e293b", margin: "0 0 12px 0" }}>
                             Recommended PlantasticHaven Care Guides
                           </h3>
                           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                             {carePlan.relatedGuides.map((guide: any, idx: number) => {
-                              const absoluteUrl = `https://plantastichaven.com${guide.link}`;
+                              const absoluteUrl = `https://procare.plantastichaven.com${guide.link}`;
                               return (
                                 <div key={idx} style={{ padding: "10px", backgroundColor: "#f8fafc", borderRadius: "8px", borderLeft: `3px solid ${selectedPalette.primary}` }}>
                                   <div style={{ fontSize: "11px", fontWeight: 700, color: "#1e293b" }}>
@@ -660,19 +631,6 @@ const FreePDF = () => {
                             })}
                           </div>
                         </div>
-
-                        {/* Visual Vector QR Code pointing to site */}
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: "1px solid #e2e8f0", paddingLeft: "15px" }}>
-                          <svg width="64" height="64" viewBox="0 0 29 29" fill="none" stroke="#0f172a" strokeWidth="1">
-                            <path d="M1 1h7v7H1V1zM3 3v3h3V3H3zM21 1h7v7h-7V1zM23 3v3h3V3H3zM1 21h7v7H1v-7zM3 23v3h3v-3H3z" fill="currentColor"/>
-                            <path d="M12 2h2v4h-2V2zM15 4h3V2h-3v2zM12 12h5v2h-5v-2zM21 12h2v5h-2v-5zM12 18h2v5h-2v-5zM18 18h4v2h-4v-2z" fill="currentColor"/>
-                          </svg>
-                          <span style={{ fontSize: "8px", color: "#64748b", fontWeight: "bold", marginTop: "8px", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                            Scan to Read
-                            <br />
-                            Care Hub
-                          </span>
-                        </div>
                       </div>
 
                       {/* Handwritten Notes Section */}
@@ -694,7 +652,7 @@ const FreePDF = () => {
                     </div>
 
                     {/* Footer page number */}
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyBetween: "space-between", fontSize: "10px", color: "#94a3b8" }}>
+                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#94a3b8" }}>
                       <span>PlantasticHaven Care Guide</span>
                       <span>Page 4 of 4</span>
                     </div>

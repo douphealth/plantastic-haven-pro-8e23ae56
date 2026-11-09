@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const stats = [
-  { value: "250K+", label: "Community Members" },
-  { value: "1.2M", label: "Questions Answered" },
-  { value: "50K+", label: "Plant Swaps" },
-  { value: "4.9★", label: "App Store Rating" },
+  { value: "Pro", label: "Posting requires Pro" },
+  { value: "Posts", label: "Questions, tips, swaps" },
+  { value: "Yours", label: "Delete your own posts" },
+  { value: "No rating", label: "No public review score" },
 ];
 
 const CommunitySection = () => {
@@ -21,7 +21,7 @@ const CommunitySection = () => {
             Grow <span className="text-primary">Together</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Join the world's most passionate plant community.
+            A small board for Pro members. Counts below are labels, not statistics.
           </p>
         </div>
 
@@ -36,9 +36,9 @@ const CommunitySection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { icon: MessageCircle, title: "Ask Experts", description: "Get personalized advice from certified horticulturists within 24 hours." },
-            { icon: MapPin, title: "Local Groups", description: "Find plant lovers near you for meetups, swaps, and shared garden projects." },
-            { icon: Award, title: "Pro Badge", description: "Stand out with your verified Pro badge and share your expertise." },
+            { icon: MessageCircle, title: "Ask members", description: "Post a question for other Pro members. There is no staff reply guarantee." },
+            { icon: MapPin, title: "No local map", description: "The community board does not show meetups or a map of members." },
+            { icon: Award, title: "Your posts", description: "You can edit or delete posts you created. There is no public badge." },
           ].map((feature) => (
             <div key={feature.title} className="text-center p-8 rounded-2xl bg-card shadow-card border border-border hover:shadow-elevated transition-all duration-300 hover:-translate-y-1">
               <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mx-auto mb-4">

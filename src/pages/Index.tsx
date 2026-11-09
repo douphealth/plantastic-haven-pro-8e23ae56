@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { readStoredCarePlan } from "@/lib/diagnosis";
 import Navbar from "@/components/Navbar";
 import PricingSection from "@/components/PricingSection";
 import Footer from "@/components/Footer";
@@ -21,17 +22,10 @@ const Index = () => {
   const [savedPlantName, setSavedPlantName] = useState("");
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("plantastichaven_care_plan");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.plantName) {
-          setHasCarePlan(true);
-          setSavedPlantName(parsed.plantName);
-        }
-      }
-    } catch (e) {
-      console.error("Error reading care plan from localStorage", e);
+    const saved = readStoredCarePlan();
+    if (saved?.plantName) {
+      setHasCarePlan(true);
+      setSavedPlantName(saved.plantName);
     }
   }, []);
 

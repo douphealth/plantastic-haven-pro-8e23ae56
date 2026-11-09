@@ -17,9 +17,9 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
       { label: "Soil Architecture", href: "/guides?article=survival-guide&day=2" },
     ],
     "Support & Legal": [
-      { label: "Terms of Service", href: "#" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Cookie Policy", href: "#" },
+      { label: "Terms", href: "/terms" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Sign in", href: "/login" },
     ],
   };
 
@@ -35,7 +35,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               </span>
             </Link>
             <p className="text-sm text-primary-foreground/50 leading-relaxed max-w-xs">
-              No signups, no paywalls. Instant diagnostic care plans and premium downloadable PDF guides for indoor plant enthusiasts.
+              Free plant checklists with no account. An optional one-time Pro workspace keeps your garden and lesson progress.
             </p>
           </div>
           {Object.entries(links).map(([category, items]) => (
