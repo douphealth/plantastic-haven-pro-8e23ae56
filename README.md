@@ -65,9 +65,13 @@ Allow redirect URLs used by authentication, including:
 2. `create-payment` authenticates the Supabase JWT and creates Stripe Checkout using the server-controlled Pro price.
 3. Stripe redirects to `/payment-success?session_id=...`.
 4. `check-payment` verifies the authenticated user, completed/paid Checkout state, user metadata ownership, and exact Pro line item.
-5. Only after successful verification does the service role set `profiles.subscription_tier = 'pro'`.
-6. The signed `stripe-webhook` independently fulfills successful or delayed payments and reconciles full refunds/disputes.
+5. Only after successful verification does the service role set `profiles.subscription_tier = 'pro'`. A fully refunded charge or a blocking dispute sets it back to `free`. Visiting the app cannot grant Pro again from a refunded Checkout session.
+6. The signed `stripe-webhook` independently fulfills successful or delayed payments and reconciles full refunds/disputes. Event ids are recorded before processing so a retry does not double-apply, and a failed handler deletes that id so Stripe can retry.
 7. Premium routes independently check the stored entitlement and can re-check Stripe before rendering.
+
+Historical Checkout sessions that used `price_1TJZHkGCqwm95OGXjymU2Vuw` can still be fulfilled or revoked. New Checkout sessions always use `STRIPE_PRO_PRICE_ID`.
+
+Payments do not depend on the newer workspace migration. Apply `supabase/migrations/20261109120000_pro_workspace_integrity.sql` before relying on per-plant watering streaks, saved lesson progress, private profiles, Pro-only community reads, and the identifier daily cap. The app keeps working without that migration: watering falls back to a direct plant update, lessons stay in the browser, and the identifier skips the cap if the log table is missing.
 
 Register this Stripe webhook endpoint:
 

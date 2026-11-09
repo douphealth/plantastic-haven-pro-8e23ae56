@@ -31,9 +31,9 @@ describe("payment and entitlement security invariants", () => {
   it("verifies payment, user ownership, and the exact Pro line item", () => {
     const source = read("supabase/functions/check-payment/index.ts");
 
-    expect(source).toContain('session.payment_status !== "paid"');
-    expect(source).toContain("session.metadata?.user_id !== user.id");
-    expect(source).toContain("item.price?.id === PRO_PRICE_ID");
+    expect(source).toContain("evaluateCheckoutSession");
+    expect(source).toContain("reconcileEntitlements");
+    expect(source).not.toContain("error instanceof Error ? error.message");
   });
 
   it("protects paid application routes", () => {
@@ -56,6 +56,8 @@ describe("payment and entitlement security invariants", () => {
     const source = read("supabase/functions/stripe-webhook/index.ts");
     const config = read("supabase/config.toml");
 
+    expect(source).toContain("stripe_webhook_events");
+    expect(source).toContain("duplicate: true");
     expect(source).toContain("constructEventAsync");
     expect(source).toContain('req.headers.get("stripe-signature")');
     expect(source).toContain('"checkout.session.async_payment_succeeded"');
@@ -71,6 +73,23 @@ describe("payment and entitlement security invariants", () => {
     expect(source).toContain('auth.getUser()');
     expect(source).toContain('profile?.subscription_tier !== "pro"');
     expect(source).toContain('code: "PRO_REQUIRED"');
+    expect(source).toContain('code: "RATE_LIMIT"');
+    expect(source).not.toContain("OPENAI_API_KEY or AI_API_KEY is not configured");
+  });
+
+  it("does not pretend to send care-sequence email", () => {
+    const source = read("src/pages/EmailSequences.tsx");
+    expect(source).toContain("Nothing here sends email");
+    expect(source).not.toContain("Test Email Dispatched");
+    expect(source).not.toContain("Simulate Urgent");
+  });
+
+  it("keeps the displayed Pro price aligned with the server fallback", () => {
+    const config = read("src/lib/stripe-config.ts");
+    const shared = read("supabase/functions/_shared/entitlement.ts");
+    expect(config).toContain("price_1UMt4LByiix0wtyT4iQ0dYbc");
+    expect(shared).toContain("price_1UMt4LByiix0wtyT4iQ0dYbc");
+    expect(shared).toContain("price_1TJZHkGCqwm95OGXjymU2Vuw");
   });
 
   it("prevents clients from editing the entitlement column", () => {

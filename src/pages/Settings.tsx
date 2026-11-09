@@ -15,6 +15,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
+import { messageFromFunctionError } from "@/lib/functionError";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
@@ -114,8 +115,10 @@ const Settings = () => {
 
       window.location.assign(data.url);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start checkout";
+      const message = await messageFromFunctionError(
+        error,
+        "Unable to start checkout"
+      );
       toast({
         title: "Payment error",
         description: message,
@@ -134,7 +137,7 @@ const Settings = () => {
     "AI plant identifier",
     "Plant health tracking and journal",
     "Community posting and discussions",
-    "Premium care sequences",
+    "Saved progress through the care lessons",
   ];
 
   return (

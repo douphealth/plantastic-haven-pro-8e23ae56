@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/shared/AppLayout";
+import { messageFromFunctionError } from "@/lib/functionError";
 
 type VerifyState = "checking" | "verified" | "failed";
 
@@ -31,8 +32,12 @@ const PaymentSuccess = () => {
 
       if (error || !data?.isPro) {
         setState("failed");
+        const detail = error
+          ? await messageFromFunctionError(error, "")
+          : "";
         setMessage(
-          "We could not verify a completed Pro payment for this account. No Pro access has been granted."
+          detail ||
+            "We could not verify a completed Pro payment for this account. No Pro access has been granted."
         );
         return;
       }

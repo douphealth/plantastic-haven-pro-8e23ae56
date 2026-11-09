@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import {
+  PRO_PRICE_FALLBACK,
+  evaluateCheckoutSession,
+  reconcileEntitlements,
+  type EntitlementDecision,
+} from "../_shared/entitlement.ts";
 
-const PRO_PRICE_ID =
-  Deno.env.get("STRIPE_PRO_PRICE_ID") ||
-  "price_1UMt4LByiix0wtyT4iQ0dYbc";
+const PRO_PRICE_ID = Deno.env.get("STRIPE_PRO_PRICE_ID") || PRO_PRICE_FALLBACK;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,76 +69,76 @@ serve(async (req) => {
         ? body.sessionId
         : null;
 
-    const sessionQualifies = async (
-      session: any
-    ): Promise<boolean> => {
-      if (
-        session.status !== "complete" ||
-        session.payment_status !== "paid" ||
-        session.metadata?.user_id !== user.id
-      ) {
-        return false;
-      }
-
-      const lineItems = await stripe.checkout.sessions.listLineItems(
-        session.id,
-        { limit: 100 }
-      );
-
-      return lineItems.data.some((item) => item.price?.id === PRO_PRICE_ID);
-    };
-
-    let hasPro = false;
+    const decisions: EntitlementDecision[] = [];
     let verifiedSessionId: string | null = null;
+
+    const consider = async (session: Stripe.Checkout.Session) => {
+      const decision = await evaluateCheckoutSession(
+        stripe,
+        session,
+        user.id,
+        PRO_PRICE_ID
+      );
+      decisions.push(decision);
+      if (decision.grant && !verifiedSessionId) {
+        verifiedSessionId = session.id;
+      }
+      return decision.grant;
+    };
 
     if (sessionId) {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
-      hasPro = await sessionQualifies(session);
-      verifiedSessionId = hasPro ? session.id : null;
-    } else {
+      const granted = await consider(session);
+      if (granted) {
+        decisions.splice(0, decisions.length, decisions[decisions.length - 1]);
+      }
+    }
+
+    if (!verifiedSessionId) {
       const customers = await stripe.customers.list({
         email: user.email,
-        limit: 10,
+        limit: 5,
       });
 
       for (const customer of customers.data) {
         const sessions = await stripe.checkout.sessions.list({
           customer: customer.id,
           status: "complete",
-          limit: 100,
+          limit: 20,
         });
 
         for (const session of sessions.data) {
-          if (await sessionQualifies(session)) {
-            hasPro = true;
-            verifiedSessionId = session.id;
-            break;
-          }
+          if (await consider(session)) break;
         }
 
-        if (hasPro) break;
+        if (verifiedSessionId) break;
       }
     }
 
-    if (hasPro) {
+    const outcome = reconcileEntitlements(decisions);
+
+    if (outcome.isPro) {
       const { error: updateError } = await admin
         .from("profiles")
         .update({ subscription_tier: "pro" })
         .eq("user_id", user.id);
 
-      if (updateError) {
-        throw updateError;
-      }
+      if (updateError) throw updateError;
+    } else if (outcome.revoke) {
+      const { error: updateError } = await admin
+        .from("profiles")
+        .update({ subscription_tier: "free" })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
     }
 
     return json({
-      isPro: hasPro,
-      verifiedSessionId,
+      isPro: outcome.isPro,
+      verifiedSessionId: outcome.isPro ? verifiedSessionId : null,
     });
   } catch (error) {
     console.error("check-payment error:", error);
-    const message =
-      error instanceof Error ? error.message : "Unable to verify payment";
-    return json({ error: message }, 500);
+    return json({ error: "Unable to verify payment" }, 500);
   }
 });
