@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { readStoredCarePlan, type CarePlan as StoredCarePlan } from "@/lib/diagnosis";
+import { insertGardenPlant } from "@/lib/plantCare";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -39,21 +43,65 @@ interface SavedCarePlan {
 
 const CarePlan = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [carePlan, setCarePlan] = useState<SavedCarePlan | null>(null);
+  const [savingGarden, setSavingGarden] = useState(false);
 
   useEffect(() => {
     loadPlan();
   }, []);
 
   const loadPlan = () => {
-    try {
-      const saved = localStorage.getItem("plantastichaven_care_plan");
-      if (saved) {
-        setCarePlan(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error("Error parsing saved care plan", e);
+    const stored = readStoredCarePlan();
+    if (stored) setCarePlan(stored);
+  };
+
+  const saveToGarden = async () => {
+    if (!carePlan) return;
+    if (!user) {
+      navigate("/register");
+      return;
     }
+
+    setSavingGarden(true);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profile?.subscription_tier !== "pro") {
+      setSavingGarden(false);
+      navigate("/settings?upgrade=required");
+      return;
+    }
+
+    const interval =
+      (carePlan as StoredCarePlan).suggestedWaterIntervalDays || 7;
+    const { error } = await insertGardenPlant({
+      userId: user.id,
+      nickname: carePlan.plantName,
+      location: "Indoor",
+      notes: carePlan.whatToDoToday,
+      waterIntervalDays: interval,
+    });
+    setSavingGarden(false);
+
+    if (error) {
+      toast({
+        title: "Could not save this plant",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Saved to your garden",
+      description: `Next watering is set for about ${interval} days from now.`,
+    });
+    navigate("/my-garden");
   };
 
   const handleCheckboxChange = (index: number, checked: boolean) => {
@@ -100,11 +148,20 @@ const CarePlan = () => {
                     {carePlan.plantName} Rescue Plan
                   </h1>
                   <p className="text-sm text-muted-foreground font-body">
-                    Diagnosed on {carePlan.date} • Report ID: <strong>{carePlan.reportId}</strong>
+                    Saved on this device · {carePlan.date}
                   </p>
                 </div>
 
-                <div className="flex gap-3 shrink-0">
+                <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={saveToGarden}
+                    disabled={savingGarden}
+                    className="rounded-xl font-bold"
+                  >
+                    {savingGarden ? "Saving..." : "Save to Pro garden"}
+                  </Button>
                   <Button asChild size="sm" className="rounded-xl font-bold bg-primary text-white hover:bg-primary/95 flex items-center gap-2">
                     <Link to="/free-pdf">
                       <FileText className="w-4 h-4" /> Download PDF

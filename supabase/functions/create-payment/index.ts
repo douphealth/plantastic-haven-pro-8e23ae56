@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { PRO_PRICE_FALLBACK } from "../_shared/entitlement.ts";
 
-const PRO_PRICE_ID =
-  Deno.env.get("STRIPE_PRO_PRICE_ID") ||
-  "price_1UMt4LByiix0wtyT4iQ0dYbc";
+const PRO_PRICE_ID = Deno.env.get("STRIPE_PRO_PRICE_ID") || PRO_PRICE_FALLBACK;
 
 const APP_URL =
   (Deno.env.get("APP_URL") || "https://procare.plantastichaven.com").replace(
@@ -113,8 +112,6 @@ serve(async (req) => {
     return json({ url: session.url });
   } catch (error) {
     console.error("create-payment error:", error);
-    const message =
-      error instanceof Error ? error.message : "Unable to create checkout";
-    return json({ error: message }, 500);
+    return json({ error: "Unable to start checkout. Please try again." }, 500);
   }
 });

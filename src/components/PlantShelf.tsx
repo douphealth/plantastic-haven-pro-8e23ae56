@@ -34,7 +34,7 @@ const PlantShelf = () => {
             Your <span className="text-primary">Plant Shelf</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Track every plant with smart care schedules, health scores, and growth insights.
+            Example plants only. A signed-in Pro garden is stored in your account.
           </p>
         </div>
 

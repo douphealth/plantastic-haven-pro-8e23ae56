@@ -1,13 +1,16 @@
 import Stripe from "npm:stripe@^22";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
+import {
+  PRO_PRICE_FALLBACK,
+  evaluateCheckoutSession,
+  isKnownProPrice,
+} from "../_shared/entitlement.ts";
 
 const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
 const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const PRO_PRICE_ID =
-  Deno.env.get("STRIPE_PRO_PRICE_ID") ||
-  "price_1UMt4LByiix0wtyT4iQ0dYbc";
+const PRO_PRICE_ID = Deno.env.get("STRIPE_PRO_PRICE_ID") || PRO_PRICE_FALLBACK;
 
 if (!stripeSecret || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
   throw new Error("Stripe webhook environment is not fully configured");
@@ -40,7 +43,7 @@ const paymentIntentUserId = async (
 
   if (
     paymentIntent.metadata?.entitlement !== "pro" ||
-    paymentIntent.metadata?.price_id !== PRO_PRICE_ID
+    !isKnownProPrice(paymentIntent.metadata?.price_id, PRO_PRICE_ID)
   ) {
     return null;
   }
@@ -48,28 +51,19 @@ const paymentIntentUserId = async (
   return paymentIntent.metadata?.user_id || null;
 };
 
-const grantFromCheckoutSession = async (
-  session: Stripe.Checkout.Session
-) => {
-  if (
-    session.payment_status !== "paid" ||
-    session.metadata?.entitlement !== "pro" ||
-    !session.metadata?.user_id
-  ) {
-    return;
-  }
+const grantFromCheckoutSession = async (session: Stripe.Checkout.Session) => {
+  if (!session.metadata?.user_id) return;
 
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-    limit: 100,
-  });
-
-  const hasProLineItem = lineItems.data.some(
-    (item) => item.price?.id === PRO_PRICE_ID
+  const decision = await evaluateCheckoutSession(
+    stripe,
+    session,
+    session.metadata.user_id,
+    PRO_PRICE_ID
   );
 
-  if (!hasProLineItem) return;
-
-  await setTier(session.metadata.user_id, "pro");
+  if (decision.grant) {
+    await setTier(session.metadata.user_id, "pro");
+  }
 };
 
 Deno.serve(async (req) => {
@@ -95,17 +89,20 @@ Deno.serve(async (req) => {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  const { error: insertError } = await admin
+    .from("stripe_webhook_events")
+    .insert({ event_id: event.id, event_type: event.type });
+
+  if (insertError?.code === "23505") {
+    return Response.json({ received: true, duplicate: true });
+  }
+
+  if (insertError) {
+    console.error("Stripe webhook idempotency insert failed:", insertError);
+    return new Response("Webhook processing failed", { status: 500 });
+  }
+
   try {
-    const { data: alreadyProcessed } = await admin
-      .from("stripe_webhook_events")
-      .select("event_id")
-      .eq("event_id", event.id)
-      .maybeSingle();
-
-    if (alreadyProcessed) {
-      return Response.json({ received: true, duplicate: true });
-    }
-
     switch (event.type) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
@@ -137,7 +134,14 @@ Deno.serve(async (req) => {
         const userId = await paymentIntentUserId(dispute.payment_intent);
 
         if (userId) {
-          await setTier(userId, dispute.status === "won" ? "pro" : "free");
+          const chargeRef = dispute.charge;
+          const chargeId =
+            typeof chargeRef === "string" ? chargeRef : chargeRef?.id;
+          const charge = chargeId
+            ? await stripe.charges.retrieve(chargeId)
+            : null;
+          const restored = dispute.status === "won" && charge?.refunded !== true;
+          await setTier(userId, restored ? "pro" : "free");
         }
         break;
       }
@@ -146,17 +150,10 @@ Deno.serve(async (req) => {
         break;
     }
 
-    const { error: logError } = await admin
-      .from("stripe_webhook_events")
-      .insert({ event_id: event.id, event_type: event.type });
-
-    if (logError && logError.code !== "23505") {
-      throw logError;
-    }
-
     return Response.json({ received: true });
   } catch (error) {
     console.error("Stripe webhook processing failed:", event.id, error);
+    await admin.from("stripe_webhook_events").delete().eq("event_id", event.id);
     return new Response("Webhook processing failed", { status: 500 });
   }
 });

@@ -12,7 +12,7 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => {
             Ready to Transform Your Plant Care?
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-            Join 250,000+ plant lovers who trust PlantasticHaven to keep their green friends thriving. Start free today.
+            Use the free checklist without an account, or open Pro if you want a saved garden.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-12">
@@ -20,8 +20,7 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => {
               variant="gold" 
               size="lg" 
               onClick={() => {
-                localStorage.setItem("guest_mode", "true");
-                window.location.href = "/dashboard";
+                window.location.href = "/diagnose";
               }}
               className="h-14 px-8 rounded-xl text-base cursor-pointer"
             >

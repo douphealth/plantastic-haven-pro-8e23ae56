@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import { Link } from "react-router-dom";
+import { recordWatering } from "@/lib/plantCare";
+import WateringReminders from "@/components/shared/WateringReminders";
 
 const CareCalendar = () => {
   const { user } = useAuth();
@@ -26,12 +28,13 @@ const CareCalendar = () => {
 
   useEffect(() => { fetchPlants(); }, [user]);
 
-  const waterPlant = async (id: string) => {
-    await supabase.from("user_plants").update({
-      last_watered: new Date().toISOString(),
-      next_water_date: new Date(Date.now() + 7 * 86400000).toISOString(),
-    }).eq("id", id);
-    toast({ title: "Watered! 💧" });
+  const waterPlant = async (id: string, intervalDays?: number) => {
+    const { error } = await recordWatering(id, intervalDays || 7);
+    if (error) {
+      toast({ title: "Could not record watering", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Watering recorded" });
     fetchPlants();
   };
 
@@ -75,7 +78,7 @@ const CareCalendar = () => {
                 </Link>
                 <div className="flex items-center gap-2">
                   <div className="text-xs text-muted-foreground hidden sm:block">Health: {plant.health_score}%</div>
-                  <Button size="sm" variant={urgent ? "hero" : "outline"} onClick={() => waterPlant(plant.id)} className="rounded-lg h-8 text-xs">
+                  <Button size="sm" variant={urgent ? "hero" : "outline"} onClick={() => waterPlant(plant.id, plant.water_interval_days)} className="rounded-lg h-8 text-xs">
                     <Droplets className="w-3 h-3 mr-1" /> Water
                   </Button>
                 </div>
@@ -92,12 +95,14 @@ const CareCalendar = () => {
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">Care Calendar</h1>
-          <p className="text-muted-foreground text-sm">Keep your plants happy with timely care</p>
+          <p className="text-muted-foreground text-sm">Dates come from the interval saved on each plant</p>
         </div>
+
+        {!loading && <WateringReminders plants={plants} />}
 
         {/* Summary stats */}
         {!loading && plants.length > 0 && (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: "Overdue", value: overdue.length, color: "text-bloom", bg: "bg-bloom/10" },
               { label: "Today", value: todayPlants.length, color: "text-primary", bg: "bg-primary/10" },

@@ -76,6 +76,27 @@ export type Database = {
           },
         ]
       }
+      lesson_progress: {
+        Row: {
+          completed_at: string
+          course_id: string
+          lesson_index: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          course_id: string
+          lesson_index: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          course_id?: string
+          lesson_index?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       plant_journal_entries: {
         Row: {
           created_at: string
@@ -121,6 +142,7 @@ export type Database = {
           common_names: string[] | null
           common_problems: string[] | null
           created_at: string
+          care_source: string | null
           description: string | null
           humidity: string | null
           id: string
@@ -133,13 +155,15 @@ export type Database = {
           temp_min: number | null
           toxicity_children: boolean | null
           toxicity_pets: boolean | null
-          water_frequency_days: number
+          water_frequency_days: number | null
+          water_guidance: string | null
         }
         Insert: {
           care_difficulty?: string
           category?: string | null
           common_names?: string[] | null
           common_problems?: string[] | null
+          care_source?: string | null
           created_at?: string
           description?: string | null
           humidity?: string | null
@@ -153,13 +177,15 @@ export type Database = {
           temp_min?: number | null
           toxicity_children?: boolean | null
           toxicity_pets?: boolean | null
-          water_frequency_days?: number
+          water_frequency_days?: number | null
+          water_guidance?: string | null
         }
         Update: {
           care_difficulty?: string
           category?: string | null
           common_names?: string[] | null
           common_problems?: string[] | null
+          care_source?: string | null
           created_at?: string
           description?: string | null
           humidity?: string | null
@@ -173,7 +199,8 @@ export type Database = {
           temp_min?: number | null
           toxicity_children?: boolean | null
           toxicity_pets?: boolean | null
-          water_frequency_days?: number
+          water_frequency_days?: number | null
+          water_guidance?: string | null
         }
         Relationships: []
       }
@@ -183,6 +210,7 @@ export type Database = {
           care_streak: number
           created_at: string
           display_name: string | null
+          last_care_on: string | null
           id: string
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           total_plants_saved: number
@@ -195,6 +223,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_care_on?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           total_plants_saved?: number
           updated_at?: string
@@ -205,6 +234,7 @@ export type Database = {
           care_streak?: number
           created_at?: string
           display_name?: string | null
+          last_care_on?: string | null
           id?: string
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           total_plants_saved?: number
@@ -222,6 +252,7 @@ export type Database = {
           location: string | null
           next_water_date: string | null
           nickname: string
+          water_interval_days: number
           notes: string | null
           photo_url: string | null
           plant_id: string | null
@@ -237,6 +268,7 @@ export type Database = {
           location?: string | null
           next_water_date?: string | null
           nickname: string
+          water_interval_days?: number
           notes?: string | null
           photo_url?: string | null
           plant_id?: string | null
@@ -252,6 +284,7 @@ export type Database = {
           location?: string | null
           next_water_date?: string | null
           nickname?: string
+          water_interval_days?: number
           notes?: string | null
           photo_url?: string | null
           plant_id?: string | null
@@ -274,7 +307,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      lookup_display_names: {
+        Args: { ids: string[] }
+        Returns: { user_id: string; display_name: string }[]
+      }
+      record_plant_care: {
+        Args: { target_plant: string; interval_days?: number }
+        Returns: Json
+      }
     }
     Enums: {
       subscription_tier: "free" | "pro" | "masterclass" | "expert"

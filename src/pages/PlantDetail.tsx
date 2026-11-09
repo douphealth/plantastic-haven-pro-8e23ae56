@@ -8,6 +8,7 @@ import { Droplets, Sun, Heart, ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
+import { recordWatering } from "@/lib/plantCare";
 
 const PlantDetail = () => {
   const { id } = useParams();
@@ -16,13 +17,14 @@ const PlantDetail = () => {
   const [plant, setPlant] = useState<any>(null);
   const [entries, setEntries] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
+  const [milestone, setMilestone] = useState("general");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user || !id) return;
     const load = async () => {
       const [plantRes, entriesRes] = await Promise.all([
-        supabase.from("user_plants").select("*").eq("id", id).eq("user_id", user.id).single(),
+        supabase.from("user_plants").select("*, plants(*)").eq("id", id).eq("user_id", user.id).single(),
         supabase.from("plant_journal_entries").select("*").eq("user_plant_id", id).eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
       setPlant(plantRes.data);
@@ -39,7 +41,7 @@ const PlantDetail = () => {
       user_plant_id: id,
       user_id: user.id,
       note: newNote,
-      milestone_type: "general",
+      milestone_type: milestone,
     });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -52,13 +54,24 @@ const PlantDetail = () => {
 
   const waterPlant = async () => {
     if (!id) return;
-    await supabase.from("user_plants").update({
-      last_watered: new Date().toISOString(),
-      next_water_date: new Date(Date.now() + 7 * 86400000).toISOString(),
-    }).eq("id", id);
-    toast({ title: "Watered! 💧" });
+    const { error } = await recordWatering(id, plant?.water_interval_days || 7);
+    if (error) {
+      toast({ title: "Could not record watering", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Watering recorded" });
     const { data } = await supabase.from("user_plants").select("*").eq("id", id).single();
     setPlant(data);
+  };
+
+  const setHealth = async (score: number) => {
+    if (!id) return;
+    const { error } = await supabase.from("user_plants").update({ health_score: score }).eq("id", id);
+    if (error) {
+      toast({ title: "Could not update health", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPlant((current: any) => current ? { ...current, health_score: score } : current);
   };
 
   if (loading) return <AppLayout><div className="text-center text-muted-foreground py-12">Loading...</div></AppLayout>;
@@ -79,7 +92,7 @@ const PlantDetail = () => {
               </h1>
               <p className="text-muted-foreground text-sm">{plant.location}{plant.room ? ` · ${plant.room}` : ""}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <PDFExporter 
                 plant={plant} 
                 journalEntries={entries} 
@@ -94,8 +107,26 @@ const PlantDetail = () => {
 
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-muted-foreground">Health Score</span>
+              <span className="text-muted-foreground">Your health rating</span>
               <span className="font-bold text-primary">{plant.health_score}%</span>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[
+                { label: "Struggling", score: 40 },
+                { label: "Okay", score: 70 },
+                { label: "Thriving", score: 90 },
+              ].map((choice) => (
+                <Button
+                  key={choice.label}
+                  type="button"
+                  size="sm"
+                  variant={plant.health_score === choice.score ? "hero" : "outline"}
+                  className="rounded-lg h-8 text-xs"
+                  onClick={() => setHealth(choice.score)}
+                >
+                  {choice.label}
+                </Button>
+              ))}
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${plant.health_score}%` }} />
@@ -110,18 +141,40 @@ const PlantDetail = () => {
             </div>
             <div className="p-3 rounded-xl bg-muted/50 text-center">
               <Sun className="w-5 h-5 mx-auto mb-1 text-secondary" />
-              <div className="text-xs text-muted-foreground">Next Water</div>
+              <div className="text-xs text-muted-foreground">Next water · every {plant.water_interval_days || 7} days</div>
               <div className="text-sm font-semibold text-card-foreground">{plant.next_water_date ? new Date(plant.next_water_date).toLocaleDateString() : "Not set"}</div>
             </div>
           </div>
+
+          {plant.plants && (
+            <div className="mt-4 rounded-xl bg-muted/40 p-3 text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">{plant.plants.name}{plant.plants.scientific_name ? ` · ${plant.plants.scientific_name}` : ""}</p>
+              <p>Light: {plant.plants.light_needs}</p>
+              {plant.plants.water_guidance && <p>Water: {plant.plants.water_guidance}</p>}
+              {plant.plants.care_source && <p className="text-xs">{plant.plants.care_source}</p>}
+            </div>
+          )}
 
           {plant.notes && <p className="mt-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">{plant.notes}</p>}
         </div>
 
         {/* Journal */}
         <div className="bg-card rounded-2xl p-6 shadow-card border border-border">
-          <h2 className="font-heading text-xl font-semibold text-card-foreground mb-4">📖 Plant Journal</h2>
-          <form onSubmit={addEntry} className="flex gap-2 mb-4">
+          <h2 className="font-heading text-xl font-semibold text-card-foreground mb-4">Plant journal</h2>
+          <form onSubmit={addEntry} className="flex flex-col sm:flex-row gap-2 mb-4">
+            <select
+              value={milestone}
+              onChange={(event) => setMilestone(event.target.value)}
+              aria-label="Journal entry type"
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="general">Note</option>
+              <option value="growth">Growth</option>
+              <option value="bloom">Bloom</option>
+              <option value="repot">Repot</option>
+              <option value="propagation">Propagation</option>
+              <option value="issue">Issue</option>
+            </select>
             <Input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Add a note..." className="flex-1" />
             <Button type="submit" variant="hero" size="sm" className="rounded-lg">
               <Plus className="w-4 h-4" />
