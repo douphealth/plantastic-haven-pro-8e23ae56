@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import logoLeaf from "@/assets/logo-leaf.png";
 import { Menu, X, Leaf } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -52,6 +54,12 @@ const Navbar = () => {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
+          <Link
+            to={user ? "/settings" : "/login"}
+            className="text-sm font-semibold text-muted-foreground hover:text-primary"
+          >
+            {user ? "Account" : "Sign in"}
+          </Link>
           <Button 
             variant="hero" 
             size="sm"
@@ -91,7 +99,14 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-border">
+          <div className="pt-2 border-t border-border space-y-2">
+            <Link
+              to={user ? "/settings" : "/login"}
+              className="block py-2.5 px-3 rounded-xl text-sm font-bold text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => setIsOpen(false)}
+            >
+              {user ? "Account" : "Sign in"}
+            </Link>
             <Button 
               variant="hero" 
               size="sm" 

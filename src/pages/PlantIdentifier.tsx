@@ -5,28 +5,86 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
+import { messageFromFunctionError } from "@/lib/functionError";
+
+const fileToJpegDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Use a JPEG, PNG, or WebP photo"));
+      return;
+    }
+    if (file.size > 8_000_000) {
+      reject(new Error("Choose a photo under 8 MB"));
+      return;
+    }
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = () => {
+      const scale = Math.min(1, 1024 / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Could not read that photo"));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that photo"));
+    };
+    image.src = url;
+  });
 
 const PlantIdentifier = () => {
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const onPhoto = async (file?: File) => {
+    if (!file) {
+      setImage("");
+      return;
+    }
+    try {
+      setImage(await fileToJpegDataUrl(file));
+    } catch (error) {
+      setImage("");
+      toast({
+        title: "Photo not added",
+        description: error instanceof Error ? error.message : "Try another photo",
+        variant: "destructive",
+      });
+    }
+  };
+
   const identify = async () => {
-    if (!description.trim()) {
-      toast({ title: "Describe your plant", description: "Tell us what the plant looks like", variant: "destructive" });
+    if (!description.trim() && !image) {
+      toast({ title: "Add a photo or a description", variant: "destructive" });
       return;
     }
     setLoading(true);
     setResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("plant-identifier", {
-        body: { description },
+        body: { description, image: image || undefined },
       });
       if (error) throw error;
+      if (!data?.name) throw new Error("The identifier could not name a plant");
       setResult(data);
-    } catch (err: any) {
-      toast({ title: "Identification failed", description: err.message || "Please try again", variant: "destructive" });
+    } catch (err: unknown) {
+      toast({
+        title: "Identification failed",
+        description: await messageFromFunctionError(err, "Please try again"),
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
@@ -35,12 +93,30 @@ const PlantIdentifier = () => {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">🔍 AI Plant Identifier</h1>
-          <p className="text-muted-foreground text-sm">Describe a plant and let AI identify it for you</p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">Plant identifier</h1>
+          <p className="text-muted-foreground text-sm">
+            Add a photo, a description, or both. The result is a best guess, not a confirmed identification. Pro accounts are limited to 25 requests per day.
+          </p>
         </div>
 
         <div className="bg-card rounded-2xl p-6 shadow-elevated border border-border space-y-4">
+          <label className="block text-sm font-medium text-foreground">
+            Photo
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-2 block w-full text-sm text-muted-foreground"
+              onChange={(event) => onPhoto(event.target.files?.[0])}
+            />
+          </label>
+          {image && (
+            <img src={image} alt="Selected plant" className="w-full max-h-64 object-cover rounded-xl" />
+          )}
+          <label className="block text-sm font-medium text-foreground" htmlFor="plant-description">
+            Description
+          </label>
           <textarea
+            id="plant-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the plant you want to identify... e.g. 'Large green leaves with holes, looks like a Swiss cheese plant, about 3 feet tall'"

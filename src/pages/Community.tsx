@@ -44,12 +44,22 @@ const Community = () => {
 
     const userIds = [...new Set(postsData.map((p: any) => p.user_id))];
     if (userIds.length > 0) {
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
       const map: Record<string, string> = {};
-      (profilesData || []).forEach((p: any) => { map[p.user_id] = p.display_name || "Anonymous"; });
+      const { data: names, error: namesError } = await supabase.rpc(
+        "lookup_display_names",
+        { ids: userIds }
+      );
+      const rows = namesError
+        ? (
+            await supabase
+              .from("profiles")
+              .select("user_id, display_name")
+              .in("user_id", userIds)
+          ).data
+        : names;
+      (rows || []).forEach((p: any) => {
+        map[p.user_id] = p.display_name || "Plant parent";
+      });
       setProfiles(map);
     }
     setLoading(false);

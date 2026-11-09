@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
 import { Link } from "react-router-dom";
+import { WATER_INTERVALS, insertGardenPlant, recordWatering } from "@/lib/plantCare";
 
 const MyGarden = () => {
   const { user } = useAuth();
@@ -16,7 +17,7 @@ const MyGarden = () => {
   const [plants, setPlants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ nickname: "", location: "Indoor", room: "", notes: "" });
+  const [form, setForm] = useState({ nickname: "", location: "Indoor", room: "", notes: "", waterIntervalDays: 7 });
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchPlants = async () => {
@@ -35,21 +36,19 @@ const MyGarden = () => {
   const addPlant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    const { error } = await supabase.from("user_plants").insert({
-      user_id: user.id,
+    const { error } = await insertGardenPlant({
+      userId: user.id,
       nickname: form.nickname,
       location: form.location,
-      room: form.room || null,
-      notes: form.notes || null,
-      health_score: 100,
-      last_watered: new Date().toISOString(),
-      next_water_date: new Date(Date.now() + 7 * 86400000).toISOString(),
+      room: form.room,
+      notes: form.notes,
+      waterIntervalDays: form.waterIntervalDays,
     });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Plant added! 🌱" });
-      setForm({ nickname: "", location: "Indoor", room: "", notes: "" });
+      toast({ title: "Plant added" });
+      setForm({ nickname: "", location: "Indoor", room: "", notes: "", waterIntervalDays: 7 });
       setShowAdd(false);
       fetchPlants();
     }
@@ -63,12 +62,13 @@ const MyGarden = () => {
     fetchPlants();
   };
 
-  const waterPlant = async (id: string) => {
-    await supabase.from("user_plants").update({
-      last_watered: new Date().toISOString(),
-      next_water_date: new Date(Date.now() + 7 * 86400000).toISOString(),
-    }).eq("id", id);
-    toast({ title: "Watered! 💧" });
+  const waterPlant = async (id: string, intervalDays?: number) => {
+    const { error } = await recordWatering(id, intervalDays || 7);
+    if (error) {
+      toast({ title: "Could not record watering", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Watering recorded" });
     fetchPlants();
   };
 
@@ -112,6 +112,19 @@ const MyGarden = () => {
               <div className="space-y-2">
                 <Label>Notes</Label>
                 <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any notes..." />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="water-interval">Water about every</Label>
+                <select
+                  id="water-interval"
+                  value={form.waterIntervalDays}
+                  onChange={(e) => setForm({ ...form, waterIntervalDays: Number(e.target.value) })}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {WATER_INTERVALS.map((days) => (
+                    <option key={days} value={days}>{days} days</option>
+                  ))}
+                </select>
               </div>
             </div>
             <Button type="submit" variant="hero" className="rounded-xl">Add to Garden</Button>
@@ -175,7 +188,7 @@ const MyGarden = () => {
                     <div className="text-xs text-muted-foreground">
                       {plant.last_watered ? `Watered ${new Date(plant.last_watered).toLocaleDateString()}` : "Never watered"}
                     </div>
-                    <Button size="sm" variant={needsWater ? "hero" : "outline"} onClick={() => waterPlant(plant.id)} className="rounded-lg text-xs h-8">
+                    <Button size="sm" variant={needsWater ? "hero" : "outline"} onClick={() => waterPlant(plant.id, plant.water_interval_days)} className="rounded-lg text-xs h-8">
                       <Droplets className="w-3 h-3 mr-1" /> {needsWater ? "Water Now!" : "Water"}
                     </Button>
                   </div>

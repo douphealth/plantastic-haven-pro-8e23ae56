@@ -40,7 +40,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.to;
+          const active =
+            item.to === "/my-garden"
+              ? pathname === item.to || pathname.startsWith("/plant/")
+              : pathname === item.to;
           return (
             <Link
               key={item.to}
@@ -58,6 +61,17 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           );
         })}
       </nav>
+      <div className="p-3 border-t border-border space-y-2">
+        <p className="px-3 text-xs text-muted-foreground truncate">{user?.email}</p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleSignOut}
+          className="w-full justify-start rounded-xl text-muted-foreground"
+        >
+          <LogOut className="w-4 h-4 mr-2" /> Sign out
+        </Button>
+      </div>
     </div>
   );
 
@@ -78,7 +92,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-border bg-card">
-          <button onClick={() => setSidebarOpen(true)} className="text-foreground">
+          <button onClick={() => setSidebarOpen(true)} className="text-foreground" aria-label="Open menu">
             <Menu className="w-6 h-6" />
           </button>
           <span className="font-heading text-lg font-bold text-foreground">

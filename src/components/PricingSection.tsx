@@ -18,7 +18,7 @@ const proTier = [
   "AI plant identifier",
   "Plant health tracking and journal",
   "Community posting and discussions",
-  "Premium care sequences",
+  "Saved progress through the care lessons",
   "Lifetime access after one payment",
 ];
 
