@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 
 export const WATER_INTERVALS = [4, 7, 10, 14, 21] as const;
 
@@ -49,39 +49,22 @@ export async function insertGardenPlant(input: {
     plant_id: input.plantId || null,
   };
 
-  const first = await supabase.from("user_plants").insert(payload).select("id");
+  const first = await db.from("user_plants").insert(payload).select("id");
   if (!first.error) return first;
   if (!first.error.message.includes("water_interval_days")) return first;
 
   const { water_interval_days: _ignored, ...withoutInterval } = payload;
-  return supabase.from("user_plants").insert(withoutInterval).select("id");
+  return db.from("user_plants").insert(withoutInterval).select("id");
 }
 
 export async function recordWatering(plantId: string, intervalDays: number) {
   const interval = clampWaterInterval(intervalDays);
-  const rpc = await supabase.rpc("record_plant_care", {
-    target_plant: plantId,
-    interval_days: interval,
-  });
-
-  if (!rpc.error) return { error: null };
-
-  const withInterval = await supabase
+  return db
     .from("user_plants")
     .update({
       last_watered: new Date().toISOString(),
       next_water_date: nextWaterIso(interval),
       water_interval_days: interval,
-    })
-    .eq("id", plantId);
-
-  if (!withInterval.error) return withInterval;
-
-  return supabase
-    .from("user_plants")
-    .update({
-      last_watered: new Date().toISOString(),
-      next_water_date: nextWaterIso(7),
     })
     .eq("id", plantId);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,7 @@ const MyGarden = () => {
 
   const fetchPlants = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data } = await db
       .from("user_plants")
       .select("*")
       .eq("user_id", user.id)
@@ -43,7 +43,7 @@ const MyGarden = () => {
   useEffect(() => { fetchPlants(); }, [user]);
 
   useEffect(() => {
-    supabase
+    db
       .from("plants")
       .select("id, name, scientific_name, common_names, light_needs, water_frequency_days, water_guidance, care_source, toxicity_pets, toxicity_children, humidity, description, care_difficulty")
       .order("name")
@@ -86,7 +86,7 @@ const MyGarden = () => {
 
   const deletePlant = async (id: string) => {
     setDeleting(id);
-    await supabase.from("user_plants").delete().eq("id", id);
+    await db.from("user_plants").delete().eq("id", id);
     toast({ title: "Plant removed" });
     setDeleting(null);
     fetchPlants();

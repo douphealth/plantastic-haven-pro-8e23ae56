@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Droplets, Sun, Heart, ArrowLeft, Plus } from "lucide-react";
@@ -24,8 +24,8 @@ const PlantDetail = () => {
     if (!user || !id) return;
     const load = async () => {
       const [plantRes, entriesRes] = await Promise.all([
-        supabase.from("user_plants").select("*, plants(*)").eq("id", id).eq("user_id", user.id).single(),
-        supabase.from("plant_journal_entries").select("*").eq("user_plant_id", id).eq("user_id", user.id).order("created_at", { ascending: false }),
+        db.from("user_plants").select("*, plants(*)").eq("id", id).eq("user_id", user.id).single(),
+        db.from("plant_journal_entries").select("*").eq("user_plant_id", id).eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
       setPlant(plantRes.data);
       setEntries(entriesRes.data || []);
@@ -37,7 +37,7 @@ const PlantDetail = () => {
   const addEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !id || !newNote.trim()) return;
-    const { error } = await supabase.from("plant_journal_entries").insert({
+    const { error } = await db.from("plant_journal_entries").insert({
       user_plant_id: id,
       user_id: user.id,
       note: newNote,
@@ -47,7 +47,7 @@ const PlantDetail = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setNewNote("");
-      const { data } = await supabase.from("plant_journal_entries").select("*").eq("user_plant_id", id).order("created_at", { ascending: false });
+      const { data } = await db.from("plant_journal_entries").select("*").eq("user_plant_id", id).order("created_at", { ascending: false });
       setEntries(data || []);
     }
   };
@@ -60,13 +60,13 @@ const PlantDetail = () => {
       return;
     }
     toast({ title: "Watering recorded" });
-    const { data } = await supabase.from("user_plants").select("*").eq("id", id).single();
+    const { data } = await db.from("user_plants").select("*").eq("id", id).single();
     setPlant(data);
   };
 
   const setHealth = async (score: number) => {
     if (!id) return;
-    const { error } = await supabase.from("user_plants").update({ health_score: score }).eq("id", id);
+    const { error } = await db.from("user_plants").update({ health_score: score }).eq("id", id);
     if (error) {
       toast({ title: "Could not update health", description: error.message, variant: "destructive" });
       return;

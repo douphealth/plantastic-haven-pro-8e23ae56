@@ -26,9 +26,9 @@ const CTASection = forwardRef<HTMLElement>((_, ref) => {
             >
               Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Link to="/login">
+            <Link to="/restore">
               <Button variant="heroOutline" size="lg" className="h-14 px-8 rounded-xl text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-                Sign In
+                Restore Pro
               </Button>
             </Link>
           </div>

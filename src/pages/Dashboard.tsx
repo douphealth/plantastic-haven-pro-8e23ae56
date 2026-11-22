@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { Droplets, Leaf, Flame, Sun, Plus, Scan, TrendingUp, Calendar, Award, Crown, ArrowRight, Sparkles, Target, BarChart3, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -20,9 +20,9 @@ const Dashboard = () => {
     if (!user) return;
     const load = async () => {
       const [profileRes, plantsRes, allPlantsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-        supabase.from("user_plants").select("*").eq("user_id", user.id).order("next_water_date", { ascending: true }).limit(5),
-        supabase.from("user_plants").select("*").eq("user_id", user.id),
+        db.from("profiles").select("*").eq("user_id", user.id).single(),
+        db.from("user_plants").select("*").eq("user_id", user.id).order("next_water_date", { ascending: true }).limit(5),
+        db.from("user_plants").select("*").eq("user_id", user.id),
       ]);
       setProfile(profileRes.data);
       setPlants(plantsRes.data || []);
@@ -141,7 +141,7 @@ const Dashboard = () => {
             { to: "/my-garden", icon: Plus, title: "Add Plant", desc: "Track a new plant", color: "group-hover:bg-primary" },
             { to: "/plant-identifier", icon: Scan, title: "AI Scanner", desc: "Identify any plant", color: "group-hover:bg-sky" },
             { to: "/care-calendar", icon: Calendar, title: "Care Calendar", desc: "View schedule", color: "group-hover:bg-bloom" },
-            { to: "/community", icon: Award, title: "Community", desc: "Share & learn", color: "group-hover:bg-secondary" },
+            { to: "/community", icon: Award, title: "Ask a question", desc: "Email the editors", color: "group-hover:bg-secondary" },
           ].map((action) => (
             <Link key={action.to} to={action.to} className="bg-card rounded-2xl p-5 shadow-card border border-border hover:shadow-elevated transition-all group">
               <div className={`w-10 h-10 rounded-xl bg-accent flex items-center justify-center ${action.color} transition-colors mb-3`}>

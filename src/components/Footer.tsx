@@ -19,7 +19,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
     "Support & Legal": [
       { label: "Terms", href: "/terms" },
       { label: "Privacy", href: "/privacy" },
-      { label: "Sign in", href: "/login" },
+      { label: "Restore Pro", href: "/restore" },
     ],
   };
 

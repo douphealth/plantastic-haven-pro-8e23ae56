@@ -1,172 +1,84 @@
 import { describe, expect, it } from "vitest";
-import {
-  evaluateCheckoutSession,
-  proEntitlementDecision,
-  reconcileEntitlements,
-  type CheckoutSessionLike,
-  type StripeEntitlementClient,
-} from "../../supabase/functions/_shared/entitlement";
+import { decideEntitlement, disputeBlocksAccess, sessionEmail, type SessionLike } from "../../worker/src/entitlement";
+import { signToken, verifyToken } from "../../worker/src/tokens";
 
-const paidSession = (
-  overrides: Partial<CheckoutSessionLike> = {}
-): CheckoutSessionLike => ({
-  id: "cs_test_123",
+const PRICE = "price_1TJZHkGCqwm95OGXjymU2Vuw";
+const SECRET = "x".repeat(48);
+
+const paid = (overrides: Partial<SessionLike> = {}, charge: Record<string, unknown> = {}): SessionLike => ({
+  id: "cs_live_abc123def456",
   status: "complete",
   payment_status: "paid",
-  metadata: { user_id: "user-1", entitlement: "pro" },
   amount_total: 799,
   currency: "usd",
-  payment_intent: "pi_123",
+  customer_details: { email: "Buyer@Example.com" },
+  line_items: { data: [{ price: { id: PRICE } }] },
+  payment_intent: {
+    id: "pi_1",
+    latest_charge: { id: "ch_1", amount: 799, amount_refunded: 0, refunded: false, disputed: false, ...charge },
+  },
   ...overrides,
 });
 
-const baseDecision = {
-  status: "complete",
-  paymentStatus: "paid",
-  metadataUserId: "user-1",
-  amountTotal: 799,
-  currency: "usd",
-  lineItemPriceIds: ["price_1UMt4LByiix0wtyT4iQ0dYbc"],
-  userId: "user-1",
-  expectedPriceId: "price_1UMt4LByiix0wtyT4iQ0dYbc",
-  charge: { fullyRefunded: false, disputed: false },
-};
-
-describe("pro entitlement decisions", () => {
-  it("grants a paid, owned, unrefunded Pro checkout", () => {
-    expect(proEntitlementDecision(baseDecision)).toMatchObject({
-      grant: true,
-      reason: "granted",
-    });
+describe("Pro entitlement decisions", () => {
+  it("grants a completed, paid, USD Pro checkout with a live charge", () => {
+    expect(decideEntitlement(paid(), [PRICE], null)).toBe("granted");
+    expect(sessionEmail(paid())).toBe("buyer@example.com");
   });
 
-  it("does not grant another user's session", () => {
+  it("refuses unfinished, unpaid, free, foreign-currency and wrong-product sessions", () => {
+    expect(decideEntitlement(paid({ status: "open" }), [PRICE], null)).toBe("incomplete");
+    expect(decideEntitlement(paid({ payment_status: "unpaid" }), [PRICE], null)).toBe("unpaid");
+    expect(decideEntitlement(paid({ amount_total: 0 }), [PRICE], null)).toBe("zero_amount");
+    expect(decideEntitlement(paid({ currency: "eur" }), [PRICE], null)).toBe("currency");
     expect(
-      proEntitlementDecision({ ...baseDecision, metadataUserId: "user-2" })
-    ).toMatchObject({ grant: false, reason: "owner_mismatch", ownedByUser: false });
+      decideEntitlement(paid({ line_items: { data: [{ price: { id: "price_other" } }] } }), [PRICE], null)
+    ).toBe("price_mismatch");
+    expect(decideEntitlement(paid({ payment_intent: "pi_unexpanded" }), [PRICE], null)).toBe("missing_charge");
   });
 
-  it("does not grant a refunded or disputed charge", () => {
-    expect(
-      proEntitlementDecision({
-        ...baseDecision,
-        charge: { fullyRefunded: true, disputed: false },
-      }).reason
-    ).toBe("refunded");
-    expect(
-      proEntitlementDecision({
-        ...baseDecision,
-        charge: { fullyRefunded: false, disputed: true },
-      }).reason
-    ).toBe("disputed");
+  it("revokes after a full refund but not a partial one", () => {
+    expect(decideEntitlement(paid({}, { refunded: true, amount_refunded: 799 }), [PRICE], null)).toBe("refunded");
+    expect(decideEntitlement(paid({}, { amount_refunded: 799 }), [PRICE], null)).toBe("refunded");
+    expect(decideEntitlement(paid({}, { amount_refunded: 200 }), [PRICE], null)).toBe("granted");
   });
 
-  it("still accepts the legacy Pro price id", () => {
-    expect(
-      proEntitlementDecision({
-        ...baseDecision,
-        lineItemPriceIds: ["price_1TJZHkGCqwm95OGXjymU2Vuw"],
-      }).grant
-    ).toBe(true);
+  it("pauses during open or lost disputes and restores after a won dispute", () => {
+    expect(decideEntitlement(paid({}, { disputed: true }), [PRICE], ["needs_response"])).toBe("disputed");
+    expect(decideEntitlement(paid({}, { disputed: true }), [PRICE], ["lost"])).toBe("disputed");
+    expect(decideEntitlement(paid({}, { disputed: true }), [PRICE], ["won"])).toBe("granted");
+    expect(disputeBlocksAccess([])).toBe(true);
   });
 
-  it("revokes when the only owned checkout was refunded", () => {
-    expect(
-      reconcileEntitlements([
-        {
-          grant: false,
-          reason: "refunded",
-          ownedByUser: true,
-        },
-      ])
-    ).toEqual({ isPro: false, revoke: true });
-  });
-
-  it("keeps Pro when a later checkout is still paid", () => {
-    expect(
-      reconcileEntitlements([
-        { grant: false, reason: "refunded", ownedByUser: true },
-        { grant: true, reason: "granted", ownedByUser: true },
-      ])
-    ).toEqual({ isPro: true, revoke: false });
+  it("accepts a legacy price only when it is configured", () => {
+    const legacy = paid({ line_items: { data: [{ price: { id: "price_legacy" } }] } });
+    expect(decideEntitlement(legacy, [PRICE], null)).toBe("price_mismatch");
+    expect(decideEntitlement(legacy, [PRICE, "price_legacy"], null)).toBe("granted");
   });
 });
 
-describe("evaluateCheckoutSession", () => {
-  it("reads the charge and refuses a full refund", async () => {
-    const stripe: StripeEntitlementClient = {
-      checkout: {
-        sessions: {
-          listLineItems: async () => ({
-            data: [{ price: { id: "price_1UMt4LByiix0wtyT4iQ0dYbc" } }],
-          }),
-        },
-      },
-      paymentIntents: {
-        retrieve: async () => ({
-          latest_charge: {
-            id: "ch_123",
-            refunded: true,
-            amount: 799,
-            amount_refunded: 799,
-            disputed: false,
-          },
-        }),
-      },
-      disputes: { list: async () => ({ data: [] }) },
-    };
+const b64url = (value: string) => btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-    const decision = await evaluateCheckoutSession(
-      stripe,
-      paidSession(),
-      "user-1",
-      "price_1UMt4LByiix0wtyT4iQ0dYbc"
-    );
-
-    expect(decision).toMatchObject({ grant: false, reason: "refunded" });
+describe("signed license and restore tokens", () => {
+  it("round-trips a license and rejects tampering or the wrong secret", async () => {
+    const token = await signToken({ typ: "license", sid: "cs_live_abc", email: "a@b.co", iat: 1 }, SECRET);
+    expect(await verifyToken(token, SECRET, "license")).toMatchObject({ sid: "cs_live_abc", email: "a@b.co" });
+    expect(await verifyToken(token, "y".repeat(48), "license")).toBeNull();
+    const [, sig] = token.split(".");
+    const forged = b64url(JSON.stringify({ typ: "license", sid: "cs_live_other", email: "a@b.co", iat: 1 }));
+    expect(await verifyToken(forged + "." + sig, SECRET, "license")).toBeNull();
+    expect(await verifyToken("garbage", SECRET, "license")).toBeNull();
   });
 
-  it("allows a won dispute and blocks an open one", async () => {
-    const disputes = { status: "won" };
-    const stripe: StripeEntitlementClient = {
-      checkout: {
-        sessions: {
-          listLineItems: async () => ({
-            data: [{ price: { id: "price_1UMt4LByiix0wtyT4iQ0dYbc" } }],
-          }),
-        },
-      },
-      paymentIntents: {
-        retrieve: async () => ({
-          latest_charge: {
-            id: "ch_123",
-            refunded: false,
-            amount: 799,
-            amount_refunded: 0,
-            disputed: true,
-          },
-        }),
-      },
-      disputes: { list: async () => ({ data: [disputes] }) },
-    };
+  it("does not accept a license as a restore link, and expires restore links", async () => {
+    const license = await signToken({ typ: "license", sid: "cs_live_abc", email: "a@b.co", iat: 1 }, SECRET);
+    expect(await verifyToken(license, SECRET, "restore")).toBeNull();
+    const restore = await signToken({ typ: "restore", sid: "cs_live_abc", email: "a@b.co", exp: 1000 }, SECRET);
+    expect(await verifyToken(restore, SECRET, "restore", 999)).not.toBeNull();
+    expect(await verifyToken(restore, SECRET, "restore", 1001)).toBeNull();
+  });
 
-    await expect(
-      evaluateCheckoutSession(
-        stripe,
-        paidSession(),
-        "user-1",
-        "price_1UMt4LByiix0wtyT4iQ0dYbc"
-      )
-    ).resolves.toMatchObject({ grant: true });
-
-    disputes.status = "needs_response";
-    await expect(
-      evaluateCheckoutSession(
-        stripe,
-        paidSession(),
-        "user-1",
-        "price_1UMt4LByiix0wtyT4iQ0dYbc"
-      )
-    ).resolves.toMatchObject({ grant: false, reason: "disputed" });
+  it("refuses to sign with a missing or short secret", async () => {
+    await expect(signToken({ typ: "license", sid: "cs_x", email: "a@b.co", iat: 1 }, "short")).rejects.toThrow();
   });
 });

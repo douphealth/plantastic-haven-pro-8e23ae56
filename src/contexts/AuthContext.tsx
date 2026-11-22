@@ -1,120 +1,76 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import { localUserId } from "@/lib/localDb";
+import { clearLicense, readLicense, revalidateLicense, type StoredLicense } from "@/lib/proAccess";
 
-interface AuthActionResult {
-  error: Error | null;
-  needsEmailConfirmation?: boolean;
-}
+// There are no passwords or accounts. Each browser has a local workspace id, and
+// Pro is unlocked by a license tied to the email used at Stripe Checkout.
+export type LocalUser = { id: string; email: string | null };
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: LocalUser;
   loading: boolean;
-  signUp: (
-    email: string,
-    password: string,
-    displayName?: string
-  ) => Promise<AuthActionResult>;
-  signIn: (email: string, password: string) => Promise<AuthActionResult>;
+  isPro: boolean;
+  email: string | null;
+  /** Re-read the stored license; pass true to re-check it with Stripe now. */
+  refreshPro: (force?: boolean) => Promise<boolean>;
+  /** Removes Pro from this browser only. The purchase can be restored by email. */
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [license, setLicense] = useState<StoredLicense | null>(() => readLicense());
   const [loading, setLoading] = useState(true);
+  const userId = useMemo(() => localUserId(), []);
+
+  const refreshPro = useCallback(async (force = false) => {
+    const next = await revalidateLicense(force);
+    setLicense(next);
+    return Boolean(next);
+  }, []);
 
   useEffect(() => {
-    localStorage.removeItem("guest_mode");
-    localStorage.removeItem("mock_session");
-
-    let mounted = true;
-
-    const initialize = async () => {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-    };
-
-    void initialize();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!mounted) return;
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    // Clean up flags left by older builds that faked Pro on the client.
+    for (const key of ["guest_mode", "mock_session", "procare_pro"]) localStorage.removeItem(key);
+    let active = true;
+    void revalidateLicense().then((next) => {
+      if (!active) return;
+      setLicense(next);
       setLoading(false);
     });
-
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key.startsWith("ph_pro_license")) setLicense(readLicense());
+    };
+    window.addEventListener("storage", onStorage);
     return () => {
-      mounted = false;
-      subscription.unsubscribe();
+      active = false;
+      window.removeEventListener("storage", onStorage);
     };
   }, []);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    displayName?: string
-  ): Promise<AuthActionResult> => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName || email },
-        emailRedirectTo: window.location.origin + "/settings",
-      },
-    });
+  const signOut = useCallback(async () => {
+    clearLicense();
+    setLicense(null);
+  }, []);
 
-    return {
-      error: error as Error | null,
-      needsEmailConfirmation: !error && !data.session,
-    };
-  };
-
-  const signIn = async (
-    email: string,
-    password: string
-  ): Promise<AuthActionResult> => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{ user, session, loading, signUp, signIn, signOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user: { id: userId, email: license?.email ?? null },
+      loading,
+      isPro: Boolean(license),
+      email: license?.email ?? null,
+      refreshPro,
+      signOut,
+    }),
+    [userId, license, loading, refreshPro, signOut]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };

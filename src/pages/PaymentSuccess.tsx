@@ -8,43 +8,61 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/shared/AppLayout";
-import { messageFromFunctionError } from "@/lib/functionError";
+import { useAuth } from "@/contexts/AuthContext";
+import { verifyCheckout } from "@/lib/proAccess";
 
 type VerifyState = "checking" | "verified" | "failed";
 
+const REASON_MESSAGES: Record<string, string> = {
+  unpaid: "Stripe has not confirmed the payment yet. Some payment methods take a few minutes. Try again shortly.",
+  incomplete: "This checkout was not completed, so no charge was made.",
+  refunded: "This payment was refunded, so Pro is not active.",
+  disputed: "This payment is under dispute, so Pro is paused until it is resolved.",
+  not_found: "We could not find this checkout. If you were charged, use Restore purchase in Settings.",
+};
+
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
+  const { refreshPro } = useAuth();
   const [state, setState] = useState<VerifyState>("checking");
   const [message, setMessage] = useState("Verifying your Stripe payment...");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const verify = async () => {
-      const sessionId = searchParams.get("session_id");
-      const { data, error } = await supabase.functions.invoke("check-payment", {
-        body: sessionId ? { sessionId } : {},
-      });
-
+      setState("checking");
+      const sessionId = searchParams.get("session_id") || "";
+      if (!sessionId) {
+        setState("failed");
+        setMessage("This page needs the checkout reference from Stripe. If you paid, use Restore purchase in Settings.");
+        return;
+      }
+      // Stripe can redirect a moment before the payment settles; retry briefly.
+      let result = await verifyCheckout(sessionId);
+      for (let i = 0; i < 3 && !cancelled && result.data && !result.data.isPro && result.data.reason === "unpaid"; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        result = await verifyCheckout(sessionId);
+      }
       if (cancelled) return;
 
-      if (error || !data?.isPro) {
+      if (result.error || !result.data?.isPro) {
         setState("failed");
-        const detail = error
-          ? await messageFromFunctionError(error, "")
-          : "";
         setMessage(
-          detail ||
-            "We could not verify a completed Pro payment for this account. No Pro access has been granted."
+          result.error ||
+            REASON_MESSAGES[result.data?.reason || ""] ||
+            "We could not verify a completed Pro payment. No Pro access has been granted."
         );
         return;
       }
 
+      await refreshPro();
+      if (cancelled) return;
       setState("verified");
       setMessage(
-        "Payment verified. Your PlantasticHaven Pro lifetime access is active."
+        `Payment verified. Pro is active for ${result.data.email}. To use Pro on another device, choose Restore purchase there and enter this email.`
       );
     };
 
@@ -53,7 +71,7 @@ const PaymentSuccess = () => {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [searchParams, attempt, refreshPro]);
 
   if (state === "checking") {
     return (
@@ -81,11 +99,11 @@ const PaymentSuccess = () => {
           </h1>
           <p className="text-muted-foreground">{message}</p>
           <div className="flex gap-3 justify-center">
-            <Button asChild variant="hero" className="rounded-xl">
-              <Link to="/settings">Return to Pro settings</Link>
+            <Button variant="hero" className="rounded-xl" onClick={() => setAttempt((n) => n + 1)}>
+              Check again
             </Button>
             <Button asChild variant="outline" className="rounded-xl">
-              <Link to="/">Use free tools</Link>
+              <Link to="/settings">Pro settings</Link>
             </Button>
           </div>
         </div>
@@ -112,7 +130,7 @@ const PaymentSuccess = () => {
             "Saved garden and care calendar",
             "AI plant identifier",
             "Plant health journal",
-            "Community access",
+            "Ask-the-editors email help",
             "Premium care sequences",
           ].map((perk) => (
             <div

@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { EMAIL_COURSES } from "@/lib/emailTemplates";
 
 export type LessonProgress = Record<string, number[]>;
@@ -54,7 +54,7 @@ export async function loadProgress(userId?: string): Promise<LessonProgress> {
   const local = readLocalProgress();
   if (!userId) return local;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("lesson_progress")
     .select("course_id, lesson_index")
     .eq("user_id", userId);
@@ -91,7 +91,7 @@ export async function setLessonComplete(
   if (!userId) return next;
 
   if (completed) {
-    const { error } = await supabase.from("lesson_progress").upsert(
+    const { error } = await db.from("lesson_progress").upsert(
       {
         user_id: userId,
         course_id: courseId,
@@ -101,7 +101,7 @@ export async function setLessonComplete(
     );
     if (error) return next;
   } else {
-    await supabase
+    await db
       .from("lesson_progress")
       .delete()
       .eq("user_id", userId)

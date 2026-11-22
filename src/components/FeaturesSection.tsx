@@ -45,8 +45,8 @@ const features = [
   },
   {
     icon: Users,
-    title: "Community",
-    description: "Pro members can post. There is no certified-botanist response time.",
+    title: "Ask the editors",
+    description: "Email a plant question, ideally with a photo. Replies come from the PlantasticHaven editors.",
     tier: "pro",
   },
 ];

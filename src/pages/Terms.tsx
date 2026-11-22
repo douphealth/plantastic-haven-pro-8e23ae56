@@ -12,13 +12,13 @@ const Terms = () => (
           PlantasticHaven Pro is a plant-care workspace. The free quiz and guides are rule-based checklists. They are not a lab test, veterinary diagnosis, or medical advice.
         </p>
         <p>
-          Pro is a one-time payment of $7.99 through Stripe for access to the current saved-garden, calendar, identifier, community, and lesson-progress features while this service is operating. It is not a promise that every future feature will be included, and it is not a subscription.
+          Pro is a one-time payment of $7.99 through Stripe for access to the current saved-garden, calendar, identifier, and lesson-progress features while this service is operating. It is not a promise that every future feature will be included, and it is not a subscription.
         </p>
         <p>
-          A full refund or a lost dispute removes Pro access. Access can also be removed if a payment is reversed. The plant identifier is capped at 25 requests per account per UTC day when the usage log is installed, and its answers can be wrong.
+          A full refund or a lost dispute removes Pro access. Access can also be removed if a payment is reversed. The plant identifier is capped at about 25 requests per purchase per UTC day, and its answers can be wrong.
         </p>
         <p>
-          You are responsible for the account you create and for checking a plant yourself before you prune, spray, or repot it.
+          Garden data is stored in your browser, so keep a backup from Settings. You are responsible for checking a plant yourself before you prune, spray, or repot it.
         </p>
         <p>
           <Link to="/" className="text-primary">Back home</Link>

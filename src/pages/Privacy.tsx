@@ -15,17 +15,17 @@ const Privacy = () => (
         <p>
           The diagnosis, care plan, and PDF stay in this browser under the key <code>plantastichaven_care_plan</code>. Clearing site data removes them. The free PDF flow does not collect an email address.
         </p>
-        <h2 className="font-heading text-xl font-semibold text-foreground">Accounts</h2>
+        <h2 className="font-heading text-xl font-semibold text-foreground">Pro workspace</h2>
         <p>
-          Creating an account stores your email and display name with Supabase Auth. Pro garden plants, journal notes, lesson progress, and community posts are stored in the project database. Your own profile is readable by your signed-in session. Display names shown beside community posts come from a limited lookup that hides values containing an @ sign.
+          There are no accounts or passwords. Garden plants, photos you save, journal notes, and lesson progress are stored only in this browser. They are not uploaded. Clearing site data removes them, so use Settings → Back up to keep a copy or move to another device.
         </p>
         <h2 className="font-heading text-xl font-semibold text-foreground">Payments</h2>
         <p>
-          Checkout is handled by Stripe. Card numbers are not stored by this app. A completed payment can set your account to Pro. A full refund or an open dispute can set it back to free.
+          Checkout is handled by Stripe. Card numbers are never seen or stored by this app. The email you enter at checkout is kept by Stripe and used to unlock Pro on your devices: a restore link is emailed to that address through our email provider, Brevo. This browser keeps a signed Pro license, which is re-checked with Stripe about twice a day. A full refund or an open or lost dispute removes Pro.
         </p>
         <h2 className="font-heading text-xl font-semibold text-foreground">Plant identifier</h2>
         <p>
-          If you use the Pro identifier, the description and optional photo you submit are sent to the AI provider configured on the server. Photos are not written into the garden unless you save a plant yourself.
+          If you use the Pro identifier, the description and optional photo you submit are sent to Cloudflare Workers AI to produce an answer. They are not stored by this app. Photos are saved into your garden, in this browser only, when you save a plant yourself.
         </p>
         <p>
           <Link to="/" className="text-primary">Back home</Link>

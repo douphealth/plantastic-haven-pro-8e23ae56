@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { readStoredCarePlan, type CarePlan as StoredCarePlan } from "@/lib/diagnosis";
 import { insertGardenPlant } from "@/lib/plantCare";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -59,13 +59,8 @@ const CarePlan = () => {
 
   const saveToGarden = async () => {
     if (!carePlan) return;
-    if (!user) {
-      navigate("/register");
-      return;
-    }
-
     setSavingGarden(true);
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("profiles")
       .select("subscription_tier")
       .eq("user_id", user.id)

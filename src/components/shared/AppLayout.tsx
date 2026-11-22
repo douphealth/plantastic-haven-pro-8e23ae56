@@ -1,11 +1,10 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logoLeaf from "@/assets/logo-leaf.png";
 import {
-  LayoutDashboard, Leaf, Calendar, Scan, MessageCircle, Settings, LogOut, Menu, X, Mail
+  LayoutDashboard, Leaf, Calendar, Scan, Settings, Menu, Mail
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,20 +12,13 @@ const navItems = [
   { to: "/care-calendar", label: "Care Calendar", icon: Calendar },
   { to: "/plant-identifier", label: "AI Scanner", icon: Scan },
   { to: "/email-sequences", label: "Care Sequences", icon: Mail },
-  { to: "/community", label: "Community", icon: MessageCircle },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
-  const { signOut, user } = useAuth();
-  const navigate = useNavigate();
+  const { email } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
     <div className={`flex flex-col h-full bg-card border-r border-border ${mobile ? "w-64" : "w-64 hidden lg:flex"}`}>
@@ -62,15 +54,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         })}
       </nav>
       <div className="p-3 border-t border-border space-y-2">
-        <p className="px-3 text-xs text-muted-foreground truncate">{user?.email}</p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={handleSignOut}
-          className="w-full justify-start rounded-xl text-muted-foreground"
-        >
-          <LogOut className="w-4 h-4 mr-2" /> Sign out
-        </Button>
+        <p className="px-3 text-xs text-muted-foreground truncate">
+          {email ? `Pro · ${email}` : "Free tools"}
+        </p>
+        <p className="px-3 text-[11px] text-muted-foreground/80">Your garden is saved in this browser.</p>
       </div>
     </div>
   );

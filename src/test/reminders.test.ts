@@ -67,10 +67,8 @@ describe("catalog matching", () => {
 });
 
 describe("plant catalog seed", () => {
-  const sql = readFileSync(
-    "supabase/migrations/20261109213000_plant_catalog_seed.sql",
-    "utf8"
-  );
+  const sql = readFileSync("src/data/plantCatalog.json", "utf8");
+  const rows = JSON.parse(sql) as Array<{ name: string; water_frequency_days: number | null }>;
 
   it("cites the extension source for every seeded species and does not invent a day count", () => {
     for (const name of [
@@ -90,7 +88,10 @@ describe("plant catalog seed", () => {
       expect(sql).toContain(name);
     }
     expect(sql.match(/plants\.ces\.ncsu\.edu/g)?.length).toBe(12);
-    expect(sql).toContain("14");
+    expect(rows).toHaveLength(12);
+    expect(
+      rows.filter((row) => row.water_frequency_days !== null).map((row) => [row.name, row.water_frequency_days])
+    ).toEqual([["ZZ plant", 14]]);
     expect(sql).toContain("twice monthly");
     expect(sql).toContain("No day count is published");
   });

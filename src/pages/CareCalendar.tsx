@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { Droplets, Check, AlertTriangle, Clock, CalendarDays, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ const CareCalendar = () => {
 
   const fetchPlants = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data } = await db
       .from("user_plants")
       .select("*")
       .eq("user_id", user.id)

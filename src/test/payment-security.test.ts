@@ -1,80 +1,78 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 
-const read = (path: string) =>
-  readFileSync(resolve(process.cwd(), path), "utf8");
+const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
+
+const sourceFiles = (dir: string): string[] =>
+  readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) return name === "test" ? [] : sourceFiles(full);
+    return /\.(ts|tsx)$/.test(name) ? [full] : [];
+  });
 
 describe("payment and entitlement security invariants", () => {
-  it("does not ship guest-mode authentication or mocked payment responses", () => {
-    const client = read("src/integrations/supabase/client.ts");
-    const auth = read("src/contexts/AuthContext.tsx");
-
-    expect(client).not.toContain("mock-token");
-    expect(client).not.toContain('functionName === "check-payment"');
-    expect(client).not.toContain('functionName === "create-payment"');
-    expect(auth).not.toContain("GUEST_SESSION");
-    expect(auth).not.toContain("Premium Guest Gardener");
+  it("never grants Pro from a client-side flag", () => {
+    for (const file of sourceFiles("src")) {
+      const source = readFileSync(file, "utf8");
+      expect(source, file).not.toMatch(/setItem\(\s*["']procare_pro["']/);
+      expect(source, file).not.toContain("GUEST_SESSION");
+      expect(source, file).not.toContain('subscription_tier: "pro"');
+    }
+    // Pro in the UI is derived only from the server-signed license.
+    expect(read("src/lib/localDb.ts")).toContain('subscription_tier: license ? "pro" : "free"');
   });
 
-  it("creates checkout with a server-controlled Pro price", () => {
-    const source = read("supabase/functions/create-payment/index.ts");
-
-    expect(source).toContain("PRO_PRICE_ID");
-    expect(source).toContain("line_items: [{ price: PRO_PRICE_ID");
-    expect(source).not.toContain("const { priceId }");
-    expect(source).toContain('metadata: {');
-    expect(source).toContain('entitlement: "pro"');
-    expect(source).toContain('customer_creation: customerId ? undefined : "always"');
+  it("no longer depends on the retired Supabase project", () => {
+    expect(existsSync("src/integrations/supabase")).toBe(false);
+    for (const file of sourceFiles("src")) {
+      expect(readFileSync(file, "utf8"), file).not.toContain("sesleusxaskzjtlifzgp");
+    }
+    expect(read("package.json")).not.toContain("@supabase/supabase-js");
   });
 
-  it("verifies payment, user ownership, and the exact Pro line item", () => {
-    const source = read("supabase/functions/check-payment/index.ts");
+  it("creates checkout on the server with the configured Pro price only", () => {
+    const worker = read("worker/src/index.ts");
+    const config = read("wrangler.jsonc");
+    expect(worker).toContain('"line_items[0][price]": env.STRIPE_PRICE_ID');
+    expect(worker).not.toMatch(/body\.(price|priceId|amount)/);
+    expect(config).toContain('"STRIPE_PRICE_ID": "price_1TJZHkGCqwm95OGXjymU2Vuw"');
+    expect(read("src/lib/stripe-config.ts")).toContain("price_1TJZHkGCqwm95OGXjymU2Vuw");
+  });
 
-    expect(source).toContain("evaluateCheckoutSession");
-    expect(source).toContain("reconcileEntitlements");
-    expect(source).not.toContain("error instanceof Error ? error.message");
+  it("keeps Stripe and email secrets out of the bundle and the repo", () => {
+    for (const file of [...sourceFiles("src"), ...sourceFiles("worker"), "wrangler.jsonc"]) {
+      const source = readFileSync(file, "utf8");
+      expect(source, file).not.toMatch(/\b(sk|rk)_(live|test)_[A-Za-z0-9]{10,}/);
+      expect(source, file).not.toMatch(/xkeysib-[a-f0-9]{20,}/);
+    }
+  });
+
+  it("re-checks Stripe before the paid AI identifier runs", () => {
+    const worker = read("worker/src/index.ts");
+    const identify = worker.slice(worker.indexOf("async function identify"));
+    expect(identify).toContain('verifyToken(body.license, env.LICENSE_SECRET, "license")');
+    expect(identify).toContain("await evaluate(env, await loadSession(env, license.sid))");
+    expect(identify).toContain('"PRO_REQUIRED"');
+    expect(identify).toContain('"RATE_LIMIT"');
+  });
+
+  it("does not reveal whether an email bought Pro from the restore form", () => {
+    const worker = read("worker/src/index.ts");
+    const restore = worker.slice(
+      worker.indexOf("async function restore("),
+      worker.indexOf("async function restoreConfirm")
+    );
+    expect(restore).toContain("return json({ ok: true });");
+    expect(restore).not.toContain("isPro");
   });
 
   it("protects paid application routes", () => {
     const app = read("src/App.tsx");
-
-    for (const route of [
-      "/dashboard",
-      "/my-garden",
-      "/care-calendar",
-      "/plant-identifier",
-      "/community",
-      "/email-sequences",
-    ]) {
+    for (const route of ["/dashboard", "/my-garden", "/care-calendar", "/plant-identifier", "/email-sequences"]) {
       expect(app).toContain(`path="${route}"`);
     }
     expect(app).toContain("<PremiumRoute>");
-  });
-
-  it("uses a signed Stripe webhook for asynchronous entitlement lifecycle", () => {
-    const source = read("supabase/functions/stripe-webhook/index.ts");
-    const config = read("supabase/config.toml");
-
-    expect(source).toContain("stripe_webhook_events");
-    expect(source).toContain("duplicate: true");
-    expect(source).toContain("constructEventAsync");
-    expect(source).toContain('req.headers.get("stripe-signature")');
-    expect(source).toContain('"checkout.session.async_payment_succeeded"');
-    expect(source).toContain('"charge.refunded"');
-    expect(source).toContain('"charge.dispute.created"');
-    expect(config).toContain("[functions.stripe-webhook]");
-    expect(config).toContain("verify_jwt = false");
-  });
-
-  it("requires Pro inside the paid AI edge function", () => {
-    const source = read("supabase/functions/plant-identifier/index.ts");
-
-    expect(source).toContain('auth.getUser()');
-    expect(source).toContain('profile?.subscription_tier !== "pro"');
-    expect(source).toContain('code: "PRO_REQUIRED"');
-    expect(source).toContain('code: "RATE_LIMIT"');
-    expect(source).not.toContain("OPENAI_API_KEY or AI_API_KEY is not configured");
   });
 
   it("does not pretend to send care-sequence email", () => {
@@ -82,26 +80,5 @@ describe("payment and entitlement security invariants", () => {
     expect(source).toContain("Nothing here sends email");
     expect(source).not.toContain("Test Email Dispatched");
     expect(source).not.toContain("Simulate Urgent");
-  });
-
-  it("keeps the displayed Pro price aligned with the server fallback", () => {
-    const config = read("src/lib/stripe-config.ts");
-    const shared = read("supabase/functions/_shared/entitlement.ts");
-    expect(config).toContain("price_1UMt4LByiix0wtyT4iQ0dYbc");
-    expect(shared).toContain("price_1UMt4LByiix0wtyT4iQ0dYbc");
-    expect(shared).toContain("price_1TJZHkGCqwm95OGXjymU2Vuw");
-  });
-
-  it("prevents clients from editing the entitlement column", () => {
-    const migration = read(
-      "supabase/migrations/20260929190000_lock_profile_entitlements.sql"
-    );
-
-    expect(migration).toContain(
-      "REVOKE INSERT, UPDATE ON TABLE public.profiles FROM authenticated"
-    );
-    expect(migration).toContain(
-      "GRANT UPDATE (display_name, avatar_url) ON TABLE public.profiles TO authenticated"
-    );
   });
 });

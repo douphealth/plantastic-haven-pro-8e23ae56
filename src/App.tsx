@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import PremiumRoute from "@/components/shared/PremiumRoute";
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -13,10 +12,7 @@ const Diagnose = lazy(() => import("./pages/Diagnose"));
 const CarePlan = lazy(() => import("./pages/CarePlan"));
 const FreePDF = lazy(() => import("./pages/FreePDF"));
 const PlantGuides = lazy(() => import("./pages/PlantGuides"));
-const Login = lazy(() => import("./pages/Auth/Login"));
-const Register = lazy(() => import("./pages/Auth/Register"));
-const ForgotPassword = lazy(() => import("./pages/Auth/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/Auth/ResetPassword"));
+const Restore = lazy(() => import("./pages/Restore"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const MyGarden = lazy(() => import("./pages/MyGarden"));
 const PlantDetail = lazy(() => import("./pages/PlantDetail"));
@@ -36,10 +32,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/free-pdf": "Care plan PDF",
   "/guides": "Plant care guides",
   "/plant-guides": "Plant care guides",
-  "/login": "Sign in",
-  "/register": "Create account",
-  "/forgot-password": "Reset password",
-  "/reset-password": "New password",
+  "/restore": "Restore Pro",
   "/settings": "Settings",
   "/payment-success": "Payment",
   "/dashboard": "Dashboard",
@@ -91,26 +84,20 @@ const App = () => (
 
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/restore" element={<Restore />} />
+            {/* Old account URLs from the password-based version. */}
+            <Route path="/login" element={<Navigate to="/restore" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/restore" replace />} />
+            <Route path="/reset-password" element={<Navigate to="/restore" replace />} />
+            <Route path="/register" element={<Navigate to="/settings" replace />} />
 
             <Route
               path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
+              element={<Settings />}
             />
             <Route
               path="/payment-success"
-              element={
-                <ProtectedRoute>
-                  <PaymentSuccess />
-                </ProtectedRoute>
-              }
+              element={<PaymentSuccess />}
             />
 
             <Route

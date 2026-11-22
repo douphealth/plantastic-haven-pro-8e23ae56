@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Scan, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import AppLayout from "@/components/shared/AppLayout";
 import PDFExporter from "@/components/shared/PDFExporter";
-import { messageFromFunctionError } from "@/lib/functionError";
+import { readLicense, postApi } from "@/lib/proAccess";
 import { useAuth } from "@/contexts/AuthContext";
 import { WATER_INTERVALS, insertGardenPlant } from "@/lib/plantCare";
 import { matchCatalogPlant, toxicityLabel, type CatalogPlant } from "@/lib/plantCatalog";
@@ -45,6 +45,24 @@ const fileToJpegDataUrl = (file: File) =>
     image.src = url;
   });
 
+// Garden photos live in this browser, so keep them small.
+const shrinkDataUrl = (dataUrl: string, maxSide = 480) =>
+  new Promise<string>((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return resolve(dataUrl);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.62));
+    };
+    image.onerror = () => resolve(dataUrl);
+    image.src = dataUrl;
+  });
+
 const PlantIdentifier = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -58,7 +76,7 @@ const PlantIdentifier = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase
+    db
       .from("plants")
       .select("id, name, scientific_name, common_names, light_needs, water_frequency_days, water_guidance, care_source, toxicity_pets, toxicity_children, humidity, description, care_difficulty")
       .then(({ data }) => setCatalog((data || []) as CatalogPlant[]));
@@ -94,17 +112,17 @@ const PlantIdentifier = () => {
     }
     setLoading(true);
     setResult(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("plant-identifier", {
-        body: { description, image: image || undefined },
-      });
-      if (error) throw error;
-      if (!data?.name) throw new Error("The identifier could not name a plant");
-      setResult(data);
-    } catch (err: unknown) {
+    const result = await postApi<Record<string, unknown>>("/api/identify", {
+      license: readLicense()?.license,
+      description,
+      image: image || undefined,
+    });
+    if (result.data?.name) {
+      setResult(result.data);
+    } else {
       toast({
         title: "Identification failed",
-        description: await messageFromFunctionError(err, "Please try again"),
+        description: result.error || "The identifier could not name a plant",
         variant: "destructive",
       });
     }
@@ -122,18 +140,7 @@ const PlantIdentifier = () => {
       "The identifier is a best guess. Sourced light and toxicity below come from the catalog match only.",
     ].filter(Boolean).join("\n\n");
 
-    let photoUrl: string | null = null;
-    if (image) {
-      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
-      const blob = await fetch(image).then((response) => response.blob());
-      const upload = await supabase.storage.from("plant-photos").upload(path, blob, {
-        contentType: "image/jpeg",
-        upsert: false,
-      });
-      if (!upload.error) {
-        photoUrl = supabase.storage.from("plant-photos").getPublicUrl(path).data.publicUrl;
-      }
-    }
+    const photoUrl = image ? await shrinkDataUrl(image) : null;
 
     const inserted = await insertGardenPlant({
       userId: user.id,
@@ -149,7 +156,7 @@ const PlantIdentifier = () => {
       return;
     }
     if (photoUrl && inserted.data?.[0]?.id) {
-      await supabase.from("user_plants").update({ photo_url: photoUrl }).eq("id", inserted.data[0].id);
+      await db.from("user_plants").update({ photo_url: photoUrl }).eq("id", inserted.data[0].id);
     }
     toast({
       title: matched ? "Saved with catalog care" : "Saved to your garden",
@@ -166,7 +173,7 @@ const PlantIdentifier = () => {
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">Plant identifier</h1>
           <p className="text-muted-foreground text-sm">
-            Add a photo, a description, or both. The result is a best guess, not a confirmed identification. Pro accounts are limited to 25 requests per day.
+            Add a photo, a description, or both. The result is a best guess, not a confirmed identification. Pro is limited to about 25 requests per day.
           </p>
         </div>
 

@@ -98,10 +98,10 @@ const PlantShelf = () => {
 
             <div className="flex gap-3 mt-6">
               <Button asChild variant="hero" className="flex-1 rounded-xl">
-                <Link to="/register">Start Tracking Plants</Link>
+                <Link to="/settings">Start Tracking Plants</Link>
               </Button>
               <Button asChild variant="heroOutline" className="flex-1 rounded-xl">
-                <Link to="/register">Try AI Scanner</Link>
+                <Link to="/settings">Try AI Scanner</Link>
               </Button>
             </div>
           </div>
