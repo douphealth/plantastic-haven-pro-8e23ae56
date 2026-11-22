@@ -22,7 +22,7 @@ const HeroSection = () => {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-sm border border-primary/30 mb-6 animate-fade-in-up">
             <Leaf className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary-foreground/90">AI-Powered Plant Intelligence</span>
+            <span className="text-sm font-medium text-primary-foreground/90">Free plant checklists</span>
           </div>
 
           <h1 className="font-heading text-5xl md:text-7xl font-bold text-primary-foreground mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
@@ -34,8 +34,7 @@ const HeroSection = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-lg font-body leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-            Identify plants instantly, diagnose diseases with AI, design gardens in AR,
-            and join a thriving community of plant lovers.
+            Answer a short quiz, get a 7-day checklist, and export a PDF. Pro is a separate one-time workspace.
           </p>
 
           <div className="flex flex-wrap gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
@@ -43,12 +42,11 @@ const HeroSection = () => {
               variant="hero" 
               size="lg" 
               onClick={() => {
-                localStorage.setItem("guest_mode", "true");
-                window.location.href = "/dashboard";
+                window.location.href = "/diagnose";
               }}
               className="h-14 px-8 text-base rounded-xl cursor-pointer"
             >
-              Start Free (Instant Access) 🌿
+              Start the free quiz
             </Button>
             <Button asChild variant="heroOutline" size="lg" className="h-14 px-8 text-base rounded-xl border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
               <a href="#pricing">Explore Pro Features</a>
@@ -58,9 +56,9 @@ const HeroSection = () => {
           {/* Stats */}
           <div className="flex gap-8 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             {[
-              { icon: Scan, label: "Plants Identified", value: "2.4M+" },
-              { icon: Droplets, label: "Plants Saved", value: "890K+" },
-              { icon: BookOpen, label: "Care Guides", value: "15K+" },
+              { icon: Scan, label: "No account", value: "Free quiz" },
+              { icon: Droplets, label: "On this device", value: "7-day plan" },
+              { icon: BookOpen, label: "Optional", value: "$7.99 Pro" },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/20 backdrop-blur-sm flex items-center justify-center">

@@ -34,7 +34,7 @@ const PlantShelf = () => {
             Your <span className="text-primary">Plant Shelf</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Track every plant with smart care schedules, health scores, and growth insights.
+            Example plants only. A signed-in Pro garden is stored in your account.
           </p>
         </div>
 
@@ -98,10 +98,10 @@ const PlantShelf = () => {
 
             <div className="flex gap-3 mt-6">
               <Button asChild variant="hero" className="flex-1 rounded-xl">
-                <Link to="/register">Start Tracking Plants</Link>
+                <Link to="/settings">Start Tracking Plants</Link>
               </Button>
               <Button asChild variant="heroOutline" className="flex-1 rounded-xl">
-                <Link to="/register">Try AI Scanner</Link>
+                <Link to="/settings">Try AI Scanner</Link>
               </Button>
             </div>
           </div>

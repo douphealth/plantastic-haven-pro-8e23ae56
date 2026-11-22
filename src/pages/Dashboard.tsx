@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/localDb";
 import { Droplets, Leaf, Flame, Sun, Plus, Scan, TrendingUp, Calendar, Award, Crown, ArrowRight, Sparkles, Target, BarChart3, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/shared/AppLayout";
+import { loadProgress, nextIncomplete } from "@/lib/lessons";
+import WateringReminders from "@/components/shared/WateringReminders";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -12,18 +14,21 @@ const Dashboard = () => {
   const [plants, setPlants] = useState<any[]>([]);
   const [allPlants, setAllPlants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nextLesson, setNextLesson] = useState<ReturnType<typeof nextIncomplete>>(null);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const [profileRes, plantsRes, allPlantsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-        supabase.from("user_plants").select("*").eq("user_id", user.id).order("next_water_date", { ascending: true }).limit(5),
-        supabase.from("user_plants").select("*").eq("user_id", user.id),
+        db.from("profiles").select("*").eq("user_id", user.id).single(),
+        db.from("user_plants").select("*").eq("user_id", user.id).order("next_water_date", { ascending: true }).limit(5),
+        db.from("user_plants").select("*").eq("user_id", user.id),
       ]);
       setProfile(profileRes.data);
       setPlants(plantsRes.data || []);
       setAllPlants(allPlantsRes.data || []);
+      const progress = await loadProgress(user.id);
+      setNextLesson(nextIncomplete(progress));
       setLoading(false);
     };
     load();
@@ -110,12 +115,14 @@ const Dashboard = () => {
           )}
         </div>
 
+        <WateringReminders plants={allPlants} />
+
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: Leaf, label: "Total Plants", value: allPlants.length, color: "text-primary", bg: "bg-primary/10" },
             { icon: Droplets, label: "Need Water", value: needsWater.length, color: "text-sky", bg: "bg-sky/10" },
-            { icon: Flame, label: "Care Streak", value: `${profile?.care_streak || 0}d`, color: "text-bloom", bg: "bg-bloom/10" },
+            { icon: Flame, label: "Care streak", value: profile?.care_streak ? `${profile.care_streak}d` : "—", color: "text-bloom", bg: "bg-bloom/10" },
             { icon: TrendingUp, label: "Avg Health", value: `${avgHealth}%`, color: "text-primary", bg: "bg-primary/10" },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-2xl p-5 shadow-card border border-border hover:shadow-elevated transition-all">
@@ -134,7 +141,7 @@ const Dashboard = () => {
             { to: "/my-garden", icon: Plus, title: "Add Plant", desc: "Track a new plant", color: "group-hover:bg-primary" },
             { to: "/plant-identifier", icon: Scan, title: "AI Scanner", desc: "Identify any plant", color: "group-hover:bg-sky" },
             { to: "/care-calendar", icon: Calendar, title: "Care Calendar", desc: "View schedule", color: "group-hover:bg-bloom" },
-            { to: "/community", icon: Award, title: "Community", desc: "Share & learn", color: "group-hover:bg-secondary" },
+            { to: "/community", icon: Award, title: "Ask a question", desc: "Email the editors", color: "group-hover:bg-secondary" },
           ].map((action) => (
             <Link key={action.to} to={action.to} className="bg-card rounded-2xl p-5 shadow-card border border-border hover:shadow-elevated transition-all group">
               <div className={`w-10 h-10 rounded-xl bg-accent flex items-center justify-center ${action.color} transition-colors mb-3`}>
@@ -237,25 +244,26 @@ const Dashboard = () => {
               </div>
             </div>
             
-            {/* Active Email Masterclasses Card */}
             <div className="bg-card rounded-2xl p-5 shadow-card border border-border space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-heading font-semibold text-card-foreground flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-primary" /> Active Drip Courses
+                  <Mail className="w-4 h-4 text-primary" /> Care lessons
                 </h3>
-                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">Pro</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Learn aroid soil science, watering rules, and lighting parameters step-by-step.
+                The same lessons as the free guides, with your place kept in this workspace.
               </p>
               <div className="bg-muted/40 p-3 rounded-xl border border-border/60">
-                <div className="text-[10px] font-bold text-secondary uppercase tracking-wide">Next Lesson</div>
-                <div className="text-xs font-semibold text-card-foreground mt-0.5 truncate">Day 2: Window Light Secrets</div>
-                <div className="text-[10px] text-muted-foreground mt-1">Tomorrow at 8:00 AM</div>
+                <div className="text-[10px] font-bold text-secondary uppercase tracking-wide">
+                  {nextLesson ? "Continue" : "All caught up"}
+                </div>
+                <div className="text-xs font-semibold text-card-foreground mt-0.5">
+                  {nextLesson ? nextLesson.subject : "You have marked every lesson complete."}
+                </div>
               </div>
-              <Link to="/email-sequences" className="block">
+              <Link to={nextLesson ? `/email-sequences?course=${nextLesson.courseId}&lesson=${nextLesson.index}` : "/email-sequences"} className="block">
                 <Button variant="outline" size="sm" className="w-full rounded-xl text-xs flex items-center justify-center gap-1">
-                  Manage Sequences <ArrowRight className="w-3.5 h-3.5" />
+                  Open lessons <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </div>
@@ -266,7 +274,7 @@ const Dashboard = () => {
                 <Sparkles className="w-6 h-6 mb-2 text-secondary" />
                 <h3 className="font-heading font-bold text-lg mb-1">Go Pro</h3>
                 <p className="text-xs text-primary-foreground/70 mb-3">
-                  Unlimited AI scans, disease diagnosis, advanced analytics & more
+                  Saved garden, care calendar, plant identifier, and lesson progress.
                 </p>
                 <Link to="/settings">
                   <Button variant="gold" size="sm" className="rounded-lg w-full">

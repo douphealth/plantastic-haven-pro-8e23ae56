@@ -1,11 +1,10 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logoLeaf from "@/assets/logo-leaf.png";
 import {
-  LayoutDashboard, Leaf, Calendar, Scan, MessageCircle, Settings, LogOut, Menu, X, Mail
+  LayoutDashboard, Leaf, Calendar, Scan, Settings, Menu, Mail
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,20 +12,13 @@ const navItems = [
   { to: "/care-calendar", label: "Care Calendar", icon: Calendar },
   { to: "/plant-identifier", label: "AI Scanner", icon: Scan },
   { to: "/email-sequences", label: "Care Sequences", icon: Mail },
-  { to: "/community", label: "Community", icon: MessageCircle },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
-  const { signOut, user } = useAuth();
-  const navigate = useNavigate();
+  const { email } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
     <div className={`flex flex-col h-full bg-card border-r border-border ${mobile ? "w-64" : "w-64 hidden lg:flex"}`}>
@@ -40,7 +32,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.to;
+          const active =
+            item.to === "/my-garden"
+              ? pathname === item.to || pathname.startsWith("/plant/")
+              : pathname === item.to;
           return (
             <Link
               key={item.to}
@@ -58,6 +53,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           );
         })}
       </nav>
+      <div className="p-3 border-t border-border space-y-2">
+        <p className="px-3 text-xs text-muted-foreground truncate">
+          {email ? `Pro · ${email}` : "Free tools"}
+        </p>
+        <p className="px-3 text-[11px] text-muted-foreground/80">Your garden is saved in this browser.</p>
+      </div>
     </div>
   );
 
@@ -78,7 +79,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-border bg-card">
-          <button onClick={() => setSidebarOpen(true)} className="text-foreground">
+          <button onClick={() => setSidebarOpen(true)} className="text-foreground" aria-label="Open menu">
             <Menu className="w-6 h-6" />
           </button>
           <span className="font-heading text-lg font-bold text-foreground">

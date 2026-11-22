@@ -1,0 +1,363 @@
+[
+ {
+  "id": "11111111-1111-4111-8111-111111111101",
+  "name": "Swiss cheese plant",
+  "scientific_name": "Monstera deliciosa",
+  "common_names": [
+   "Ceriman",
+   "Split-leaf philodendron",
+   "Hurricane plant"
+  ],
+  "care_difficulty": "moderate",
+  "light_needs": "Moderate brightness, not direct sunlight. NC State also lists partial shade.",
+  "water_frequency_days": null,
+  "water_guidance": "Water thoroughly, then allow the top quarter to one-third of the mix to dry before watering again. No day count is published.",
+  "humidity": "High humidity",
+  "temp_min": 16,
+  "temp_max": 29,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State describes low-severity poisoning from needle-like calcium oxalate crystals: intense burning of the mouth, tongue, and throat if eaten, and skin irritation from the sap. ASPCA lists Monstera deliciosa as toxic to dogs and cats for the same principle.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Layering",
+   "Stem cutting"
+  ],
+  "common_problems": [
+   "Root rot from soil that stays wet",
+   "Contact irritation from sap"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/monstera-deliciosa/ (retrieved 2026-11-09). Pet listing: ASPCA, https://www.aspca.org/pet-care/aspca-poison-control/toxic-and-non-toxic-plants/cutleaf-philodendron (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111102",
+  "name": "Snake plant",
+  "scientific_name": "Dracaena trifasciata",
+  "common_names": [
+   "Mother-in-law's tongue",
+   "Sansevieria trifasciata"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Direct sun only part of the day (2 to 6 hours). NC State says it also tolerates very low light.",
+  "water_frequency_days": null,
+  "water_guidance": "In spring to autumn, allow the soil to dry between waterings. In winter, water only every one to two months. The winter phrase is a range, so no single day count is stored.",
+  "humidity": "Tolerates low humidity",
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State: toxic if ingested because of saponins. Symptoms listed include vomiting, depression, nausea, diarrhea, anorexia, hypersalivation, and dilated pupils in cats. The sap can irritate skin. Tagged as a problem for children, cats, and dogs.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division",
+   "Stem cutting"
+  ],
+  "common_problems": [
+   "Root rot if overwatered",
+   "Mealybugs",
+   "Spider mites"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/dracaena-trifasciata/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111103",
+  "name": "Fiddle-leaf fig",
+  "scientific_name": "Ficus lyrata",
+  "common_names": [
+   "Banjo fig"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Bright indirect light or partial shade, with protection from afternoon sun.",
+  "water_frequency_days": null,
+  "water_guidance": "NC State says this plant prefers moist, well-drained soil and is sensitive to overwatering. It does not publish a number of days between waterings.",
+  "humidity": "Medium relative humidity",
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State: toxic to humans, cats, and dogs if ingested. Listed effects include oral irritation, excessive drooling, and vomiting. The milky sap can irritate skin. Keep temperatures greater than 55 F (13 C).",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Stem cutting"
+  ],
+  "common_problems": [
+   "Leaf drop from too much or too little water",
+   "Scale",
+   "Mealybugs",
+   "Spider mites"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/ficus-lyrata/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111104",
+  "name": "Golden pothos",
+  "scientific_name": "Epipremnum aureum",
+  "common_names": [
+   "Devil's ivy",
+   "Pothos"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Bright indirect light. NC State says it survives for long periods in low light, and low light can fade variegation.",
+  "water_frequency_days": null,
+  "water_guidance": "Let the well-drained potting medium dry out between waterings. No day count is published.",
+  "humidity": null,
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State lists medium-severity poisoning from calcium oxalate crystals: oral irritation, swelling, drooling, vomiting, difficulty swallowing, skin irritation, and diarrhea. Tagged as a problem for cats and dogs.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Stem cutting"
+  ],
+  "common_problems": [
+   "Root rot and black leaf margins from overwatering",
+   "Loss of variegation in low light"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/epipremnum-aureum/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111105",
+  "name": "ZZ plant",
+  "scientific_name": "Zamioculcas zamiifolia",
+  "common_names": [
+   "Zanzibar gem",
+   "Zuzu plant"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Bright indirect sunlight. NC State says it grows in very low light, and direct sun can scald and brown the leaves.",
+  "water_frequency_days": 14,
+  "water_guidance": "Summer: water twice monthly, and only if the soil has dried completely. Winter: water once a month while it is not actively growing. The stored 14-day interval is only the summer phrase \"twice monthly.\"",
+  "humidity": null,
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State: medium toxicity. Calcium oxalate; diarrhea and vomiting if leaves are consumed in quantity. Tagged as a problem for cats and dogs. Direct sun can scald the leaves.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division",
+   "Leaf cutting"
+  ],
+  "common_problems": [
+   "Rot if the soil stays wet",
+   "Scale insects"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/zamioculcas-zamiifolia/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111106",
+  "name": "Aloe vera",
+  "scientific_name": "Aloe vera",
+  "common_names": [
+   "True aloe",
+   "Barbados aloe"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Full sun to partial shade.",
+  "water_frequency_days": null,
+  "water_guidance": "Allow the soil to dry completely between waterings, and water less often in winter. No day count is published.",
+  "humidity": null,
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State: low-severity poisoning through ingestion or skin contact with the latex. Symptoms listed include abdominal cramping, diarrhea, red urine, and skin irritation. Tagged as a problem for cats, dogs, and horses. The inner gel is a separate preparation and is not a reason to eat the leaf.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division"
+  ],
+  "common_problems": [
+   "Root rot from overwatering",
+   "Mealybugs",
+   "Aphids"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/aloe-vera/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111107",
+  "name": "Peace lily",
+  "scientific_name": "Spathiphyllum",
+  "common_names": [
+   "Spathe flower",
+   "White sails"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Partial to deep shade. Do not place it in direct sun.",
+  "water_frequency_days": null,
+  "water_guidance": "Keep the soil moist but not soggy, and allow it to dry between waterings. No day count is published. Day temperatures cited as 68 to 85 F.",
+  "humidity": null,
+  "temp_min": 20,
+  "temp_max": 29,
+  "toxicity_pets": true,
+  "toxicity_children": true,
+  "description": "NC State: medium-severity poisoning from calcium oxalate crystals if leaves are eaten in quantity. Symptoms include severe mouth pain, a burning sensation, drooling, vomiting, and difficulty swallowing. Tagged as a problem for children, cats, and dogs.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division"
+  ],
+  "common_problems": [
+   "Brown leaf tips from direct sun, underwatering, or low humidity",
+   "Mealybugs"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/spathiphyllum/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111108",
+  "name": "Peacock plant",
+  "scientific_name": "Goeppertia makoyana",
+  "common_names": [
+   "Peacock calathea",
+   "Cathedral windows",
+   "Calathea makoyana"
+  ],
+  "care_difficulty": "moderate",
+  "light_needs": "Bright indirect sun or partial shade. Direct sun can burn the leaves.",
+  "water_frequency_days": null,
+  "water_guidance": "Keep the mix moist but not wet or soggy, and decrease watering in winter. No day count is published. NC State recommends distilled or rain water because fluoride in tap water can brown the leaves.",
+  "humidity": "About 60 percent relative humidity",
+  "temp_min": 18,
+  "temp_max": 24,
+  "toxicity_pets": false,
+  "toxicity_children": false,
+  "description": "NC State tags this plant non-toxic for cats, dogs, and horses. The page does not list it as poisonous to people. Temperatures cited as 65 to 75 F.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division"
+  ],
+  "common_problems": [
+   "Root rot from wet soil",
+   "Leaf roll or browning in low humidity",
+   "Leaf browning from fluoridated tap water"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/goeppertia-makoyana/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111109",
+  "name": "Spider plant",
+  "scientific_name": "Chlorophytum comosum",
+  "common_names": [
+   "Ribbon plant",
+   "Spider ivy"
+  ],
+  "care_difficulty": "moderate",
+  "light_needs": "Medium light. It tolerates deep shade and is intolerant of direct sunlight.",
+  "water_frequency_days": null,
+  "water_guidance": "It grows best in moist soil and is also described as tolerant of drought. Reduce watering in winter. No day count is published. NC State says chlorine and fluoride in tap water can burn leaf tips.",
+  "humidity": "Medium air humidity",
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": false,
+  "toxicity_children": false,
+  "description": "NC State tags Chlorophytum comosum non-toxic for cats, dogs, and horses. The page does not list a human poison section. Keep temperatures above 45 F (7 C).",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Division",
+   "Plantlets"
+  ],
+  "common_problems": [
+   "Leaf-tip burn from tap water",
+   "Fewer plantlets if over-fertilized"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/chlorophytum-comosum/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111110",
+  "name": "Boston fern",
+  "scientific_name": "Nephrolepis exaltata",
+  "common_names": [
+   "Bostonfern"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Bright indirect light.",
+  "water_frequency_days": null,
+  "water_guidance": "Keep the soil moist and do not let it dry out. Reduce watering in winter, when overwatering can lead to root rot. No day count is published.",
+  "humidity": "High humidity",
+  "temp_min": 16,
+  "temp_max": 21,
+  "toxicity_pets": false,
+  "toxicity_children": false,
+  "description": "NC State tags Nephrolepis exaltata non-toxic for cats, dogs, and horses. The page does not list a human poison section. Cited indoor temperatures are 60 to 70 F. Dark dots on the frond undersides can be spores rather than insects.",
+  "category": "houseplant",
+  "propagation_methods": [],
+  "common_problems": [
+   "Scale or spider mites when the air is dry",
+   "Root rot from winter overwatering"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/nephrolepis-exaltata/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111111",
+  "name": "Rubber plant",
+  "scientific_name": "Ficus elastica",
+  "common_names": [
+   "Indian rubber plant"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "Bright indirect light or partial shade, with protection from afternoon sun.",
+  "water_frequency_days": null,
+  "water_guidance": "Water regularly and avoid overwatering. Reduce watering from fall to late winter while the plant is dormant. No day count is published.",
+  "humidity": "Medium relative humidity",
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": false,
+  "description": "NC State tags Ficus elastica as a problem for cats, dogs, and horses. This seed does not mark it poisonous to people because that page's problem list does not include a human-poison section. Cut leaves drip sap. Keep temperatures greater than 55 F (13 C).",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Layering",
+   "Root cutting",
+   "Seed"
+  ],
+  "common_problems": [
+   "Leaf loss from overwatering, cold, or drafts",
+   "Mealybugs",
+   "Scale",
+   "Spider mites"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/ficus-elastica/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ },
+ {
+  "id": "11111111-1111-4111-8111-111111111112",
+  "name": "Jade plant",
+  "scientific_name": "Crassula ovata",
+  "common_names": [
+   "Jade tree",
+   "Money plant"
+  ],
+  "care_difficulty": "easy",
+  "light_needs": "A sunny indoor spot that also has some afternoon shade.",
+  "water_frequency_days": null,
+  "water_guidance": "Water in moderation when the soil is dry, and reduce watering from fall to late winter. No day count is published.",
+  "humidity": null,
+  "temp_min": null,
+  "temp_max": null,
+  "toxicity_pets": true,
+  "toxicity_children": false,
+  "description": "NC State tags Crassula ovata as a problem for cats, dogs, and horses. This seed does not mark it poisonous to people because that page does not include a human-poison section. Leaf fall and root rot can follow overwatering.",
+  "category": "houseplant",
+  "propagation_methods": [
+   "Leaf cutting",
+   "Stem cutting"
+  ],
+  "common_problems": [
+   "Root rot and leaf fall from overwatering",
+   "Mealybugs",
+   "Scale",
+   "Spider mites"
+  ],
+  "care_source": "North Carolina Extension Gardener Plant Toolbox, https://plants.ces.ncsu.edu/plants/crassula-ovata/ (retrieved 2026-11-09).",
+  "created_at": "2026-11-09T00:00:00Z"
+ }
+]

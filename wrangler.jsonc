@@ -1,0 +1,27 @@
+{
+  // procare.plantastichaven.com: the built app (dist/) plus the /api Worker.
+  // Secrets (set with `wrangler secret put`, never committed):
+  //   STRIPE_SECRET_KEY  restricted live key: Checkout Sessions write/read, PaymentIntents read, Charges read, Disputes read
+  //   LICENSE_SECRET     random 48+ byte string used to sign Pro licenses
+  //   BREVO_API_KEY      transactional email for "restore purchase" links + newsletter capture
+  "name": "plantastic-procare-selfhosted-proxy",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "procare.plantastichaven.com/*", "zone_name": "plantastichaven.com" }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "ai": { "binding": "AI" },
+  "vars": {
+    "STRIPE_PRICE_ID": "price_1TJZHkGCqwm95OGXjymU2Vuw",
+    "LEGACY_PRICE_IDS": "",
+    "APP_URL": "https://procare.plantastichaven.com",
+    // Must be a verified sender (or on an authenticated domain) in the Brevo account.
+    "RESTORE_FROM_EMAIL": "info@plantastichaven.com"
+  },
+  "observability": { "enabled": true }
+}

@@ -441,32 +441,24 @@ export const PDFExporter = ({
                 <div class="tag-checklist">
                   <div style="display: flex; align-items: center; gap: 4px;">
                     <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #64748b; border-radius: 2px;"></span>
-                    <span>Light: <strong>${plant.light || 'Bright Indirect'}</strong></span>
+                    <span>Light: <strong>${plant.light || 'Not recorded'}</strong></span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 4px;">
                     <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #64748b; border-radius: 2px;"></span>
-                    <span>Water: <strong>${plant.water || 'Every 7 days'}</strong></span>
+                    <span>Water: <strong>${plant.water || 'Not recorded'}</strong></span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 4px;">
                     <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #ef4444; border-radius: 2px;"></span>
-                    <span style="font-size: 8px;">Toxicity: ${(plant.toxicity?.toLowerCase().includes("toxic") && !plant.toxicity?.toLowerCase().includes("non-toxic")) ? '⚠️ TOXIC' : '✓ Safe'}</span>
+                    <span style="font-size: 8px;">Toxicity: ${plant.toxicity ? plant.toxicity : 'Not assessed'}</span>
                   </div>
                 </div>
 
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                  <!-- Mock QR code svg -->
-                  <svg class="tag-qr-mock" viewBox="0 0 29 29" fill="none" stroke="#000000" stroke-width="1">
-                    <path d="M1 1h7v7H1V1zM3 3v3h3V3H3zM21 1h7v7h-7V1zM23 3v3h3V3H3zM1 21h7v7H1v-7zM3 23v3h3v-3H3z" fill="currentColor"/>
-                    <path d="M12 2h2v4h-2V2zM15 4h3V2h-3v2zM12 12h5v2h-5v-2zM21 12h2v5h-2v-5zM12 18h2v5h-2v-5zM18 18h4v2h-4v-2z" fill="currentColor"/>
-                  </svg>
-                  <span style="font-size: 7px; color: #94a3b8; font-weight: 700; margin-top: 3px;">SCAN CARD</span>
-                </div>
               </div>
             </div>
 
             <!-- Footer Info -->
             <div class="footer-info">
-              <span>PlantasticHaven Premium — Intelligent Care Sequencer & Database Integration</span>
+              <span>PlantasticHaven care label</span>
               <span>Page 1 of 1</span>
             </div>
           </div>
@@ -489,15 +481,11 @@ export const PDFExporter = ({
       }, 1000);
     };
 
-    toast({
-      title: "PDF Care Report Generated! 📄",
-      description: "Opening print layout interface. You can save as PDF or print directly.",
-    });
   };
 
   return (
     <Button 
-      variant={variant === "gold" ? "hero" : variant} 
+      variant={variant === "gold" || variant === "primary" ? "hero" : variant} 
       size={size === "icon" ? "icon" : size}
       onClick={handlePrint}
       className={`${variant === "gold" ? "bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white font-bold" : ""} rounded-xl flex items-center justify-center ${size === "icon" ? "p-2" : "gap-2 font-semibold"} transition-all hover:scale-[1.02] shadow-sm`}

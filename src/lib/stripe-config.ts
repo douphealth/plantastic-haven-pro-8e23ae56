@@ -1,4 +1,5 @@
-// Stripe product and price IDs for PlantasticHaven
+// Display copy only. Checkout uses STRIPE_PRICE_ID in wrangler.jsonc on the server;
+// the browser never chooses the price.
 export const STRIPE_CONFIG = {
   pro: {
     product_id: "prod_UI9akocWgEoW84",

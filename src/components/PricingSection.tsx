@@ -1,7 +1,6 @@
 import { Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 
 const freeTier = [
   "60-second plant problem diagnosis",
@@ -17,14 +16,12 @@ const proTier = [
   "Care calendar and watering schedule",
   "AI plant identifier",
   "Plant health tracking and journal",
-  "Community posting and discussions",
-  "Premium care sequences",
+  "Saved progress through the care lessons",
   "Lifetime access after one payment",
 ];
 
 const PricingSection = () => {
-  const { user } = useAuth();
-  const proCtaHref = user ? "/settings" : "/register";
+  const proCtaHref = "/settings";
 
   return (
     <section id="pricing" className="py-24 bg-background">

@@ -1,70 +1,39 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
-import {
-  User,
-  Crown,
-  Shield,
-  Check,
-  Loader2,
-  ExternalLink,
-} from "lucide-react";
+import { Crown, Check, Loader2, ExternalLink, Download, Upload, Mail, Shield } from "lucide-react";
+import { REMINDER_PREFERENCE_KEY } from "@/lib/reminders";
+import { requestRestore, startCheckout } from "@/lib/proAccess";
+import { exportLocalData, importLocalData } from "@/lib/localDb";
+
+const PRO_FEATURES = [
+  "Personal plant dashboard",
+  "Saved garden and plant records",
+  "Care calendar and watering schedule",
+  "AI plant identifier",
+  "Plant health tracking and journal",
+  "Saved progress through the care lessons",
+];
 
 const Settings = () => {
-  const { user, signOut } = useAuth();
+  const { isPro, email, loading, signOut, refreshPro } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const [profile, setProfile] = useState<any>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [checkingPayment, setCheckingPayment] = useState(true);
+  const [checkoutEmail, setCheckoutEmail] = useState("");
+  const [restoreEmail, setRestoreEmail] = useState("");
   const [upgrading, setUpgrading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!user) return;
-
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (cancelled) return;
-
-      setProfile(profileData);
-      setDisplayName(profileData?.display_name || "");
-
-      if (profileData?.subscription_tier !== "pro") {
-        const { data } = await supabase.functions.invoke("check-payment", {
-          body: {},
-        });
-
-        if (!cancelled && data?.isPro) {
-          setProfile((previous: any) => ({
-            ...(previous || profileData),
-            subscription_tier: "pro",
-          }));
-        }
-      }
-
-      if (!cancelled) setCheckingPayment(false);
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreSent, setRestoreSent] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [remindersOn, setRemindersOn] = useState(
+    () => localStorage.getItem(REMINDER_PREFERENCE_KEY) === "on"
+  );
 
   useEffect(() => {
     if (searchParams.get("checkout") === "cancelled") {
@@ -75,188 +44,221 @@ const Settings = () => {
     } else if (searchParams.get("upgrade") === "required") {
       toast({
         title: "Pro access required",
-        description: "Unlock Pro to use the personal plant-care workspace.",
+        description: "Unlock Pro to use the personal plant-care workspace, or restore a purchase.",
       });
     }
   }, [searchParams, toast]);
 
-  const updateProfile = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: displayName })
-      .eq("user_id", user.id);
-    setLoading(false);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({ title: "Profile updated" });
-    }
-  };
-
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (event: React.FormEvent) => {
+    event.preventDefault();
     setUpgrading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: {},
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error("Stripe Checkout URL was not returned");
-
-      window.location.assign(data.url);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start checkout";
-      toast({
-        title: "Payment error",
-        description: message,
-        variant: "destructive",
-      });
-      setUpgrading(false);
+    const result = await startCheckout(checkoutEmail);
+    if (result.data?.url) {
+      window.location.assign(result.data.url);
+      return;
     }
+    setUpgrading(false);
+    if (result.code === "ALREADY_PRO") setRestoreSent(true);
+    toast({
+      title: result.code === "ALREADY_PRO" ? "You already have Pro" : "Checkout did not start",
+      description: result.error || "Please try again.",
+      variant: result.code === "ALREADY_PRO" ? "default" : "destructive",
+    });
   };
 
-  const isPro = profile?.subscription_tier === "pro";
+  const handleRestore = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setRestoring(true);
+    const result = await requestRestore(restoreEmail);
+    setRestoring(false);
+    if (result.error) {
+      toast({ title: "Could not send the link", description: result.error, variant: "destructive" });
+      return;
+    }
+    setRestoreSent(true);
+  };
 
-  const proFeatures = [
-    "Personal plant dashboard",
-    "Saved garden and plant records",
-    "Care calendar and watering schedule",
-    "AI plant identifier",
-    "Plant health tracking and journal",
-    "Community posting and discussions",
-    "Premium care sequences",
-  ];
+  const recheck = async () => {
+    setRechecking(true);
+    const stillPro = await refreshPro(true);
+    setRechecking(false);
+    toast({
+      title: stillPro ? "Pro is active" : "Pro is not active",
+      description: stillPro
+        ? "Stripe confirmed your payment."
+        : "Stripe no longer shows an active Pro payment for this license.",
+    });
+  };
+
+  const backup = () => {
+    const blob = new Blob([JSON.stringify(exportLocalData(), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `plantastichaven-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const restoreBackup = async (file?: File) => {
+    if (!file) return;
+    try {
+      const count = importLocalData(JSON.parse(await file.text()));
+      toast({ title: "Backup restored", description: `${count} saved items were loaded into this browser.` });
+    } catch (error) {
+      toast({
+        title: "Backup not restored",
+        description: error instanceof Error ? error.message : "That file could not be read.",
+        variant: "destructive",
+      });
+    }
+    if (fileInput.current) fileInput.current.value = "";
+  };
+
+  const enableReminders = async () => {
+    if (typeof Notification === "undefined") {
+      toast({
+        title: "This browser cannot show notifications",
+        description: "The in-app list still appears when a plant is overdue.",
+      });
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      localStorage.setItem(REMINDER_PREFERENCE_KEY, "off");
+      setRemindersOn(false);
+      toast({
+        title: "Browser notifications stay off",
+        description: "You can still see overdue plants in the app.",
+      });
+      return;
+    }
+    localStorage.setItem(REMINDER_PREFERENCE_KEY, "on");
+    setRemindersOn(true);
+    toast({
+      title: "Browser reminders on",
+      description: "A notification can appear once a day per overdue plant while this site is open.",
+    });
+  };
+
+  const disableReminders = () => {
+    localStorage.setItem(REMINDER_PREFERENCE_KEY, "off");
+    setRemindersOn(false);
+  };
+
+  const restoreForm = restoreSent ? (
+    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-card-foreground flex gap-2">
+      <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+      If that email has a Pro purchase, a link to unlock it is on its way. Open it in this browser. It works for one hour.
+    </div>
+  ) : (
+    <form onSubmit={handleRestore} className="space-y-2">
+      <Label htmlFor="restore-email">Already bought Pro? Restore it on this device</Label>
+      <div className="flex gap-2">
+        <Input
+          id="restore-email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="Email used at checkout"
+          value={restoreEmail}
+          onChange={(event) => setRestoreEmail(event.target.value)}
+        />
+        <Button type="submit" variant="outline" disabled={restoring} className="rounded-xl shrink-0">
+          {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : "Email me a link"}
+        </Button>
+      </div>
+    </form>
+  );
 
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="font-heading text-3xl font-bold text-foreground">
-          Settings
-        </h1>
-
-        <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-4">
-          <h2 className="font-heading text-xl font-semibold text-card-foreground flex items-center gap-2">
-            <User className="w-5 h-5" /> Profile
-          </h2>
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                value={user?.email || ""}
-                disabled
-                className="bg-muted/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Display Name</Label>
-              <Input
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-              />
-            </div>
-            <Button
-              variant="hero"
-              onClick={updateProfile}
-              disabled={loading}
-              className="rounded-xl"
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </div>
+        <h1 className="font-heading text-3xl font-bold text-foreground">Settings</h1>
 
         <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-4">
           <h2 className="font-heading text-xl font-semibold text-card-foreground flex items-center gap-2">
             <Crown className="w-5 h-5 text-secondary" /> Pro access
           </h2>
 
-          {checkingPayment ? (
+          {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
               <Loader2 className="w-4 h-4 animate-spin" />
               Checking your purchase status...
             </div>
           ) : isPro ? (
-            <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-xl p-5 border border-primary/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div>
-                  <div className="font-heading font-bold text-card-foreground">
-                    Pro lifetime access
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-xl p-5 border border-primary/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Stripe payment verified
+                  <div>
+                    <div className="font-heading font-bold text-card-foreground">Pro lifetime access</div>
+                    <div className="text-xs text-muted-foreground">Stripe payment verified · {email}</div>
                   </div>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PRO_FEATURES.map((feature) => (
+                    <div key={feature} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Check className="w-3 h-3 text-primary shrink-0" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {proFeatures.map((feature) => (
-                  <div
-                    key={feature}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <Check className="w-3 h-3 text-primary shrink-0" />
-                    {feature}
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs text-muted-foreground">
+                To use Pro on another phone or computer, open Settings there and choose “Email me a link” with {email}.
+              </p>
+              <Button type="button" variant="outline" onClick={recheck} disabled={rechecking} className="rounded-xl">
+                {rechecking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Re-check purchase
+              </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="p-4 rounded-xl bg-muted/50">
-                <div className="font-medium text-card-foreground">
-                  Free tools remain available
-                </div>
+                <div className="font-medium text-card-foreground">Free tools remain available</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Diagnosis, rescue care plan, PDF export, and guides do not
-                  require Pro.
+                  Diagnosis, rescue care plan, PDF export, and guides do not require Pro or an email.
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">
+              <form
+                onSubmit={handleUpgrade}
+                className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground"
+              >
                 <div className="flex items-center gap-2 mb-1">
                   <Crown className="w-5 h-5 text-secondary" />
-                  <span className="text-xs font-bold text-secondary uppercase">
-                    Unlock Pro
-                  </span>
+                  <span className="text-xs font-bold text-secondary uppercase">Unlock Pro</span>
                 </div>
-                <h3 className="font-heading text-2xl font-bold mb-1">
-                  PlantasticHaven Pro
-                </h3>
+                <h3 className="font-heading text-2xl font-bold mb-1">PlantasticHaven Pro</h3>
                 <div className="mb-4">
                   <span className="text-3xl font-bold">$7.99</span>
-                  <span className="text-primary-foreground/70 text-sm ml-1">
-                    one-time · lifetime access
-                  </span>
+                  <span className="text-primary-foreground/70 text-sm ml-1">one-time · lifetime access</span>
                 </div>
                 <ul className="space-y-2 mb-5">
-                  {proFeatures.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-2 text-sm text-primary-foreground/90"
-                    >
+                  {PRO_FEATURES.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm text-primary-foreground/90">
                       <Check className="w-4 h-4 text-secondary shrink-0" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Button
-                  variant="gold"
-                  onClick={handleUpgrade}
-                  disabled={upgrading}
-                  className="w-full h-12 rounded-xl text-base"
-                >
+                <Label htmlFor="checkout-email" className="text-primary-foreground/90">
+                  Your email (used to restore Pro on other devices)
+                </Label>
+                <Input
+                  id="checkout-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={checkoutEmail}
+                  onChange={(event) => setCheckoutEmail(event.target.value)}
+                  className="mt-1.5 mb-4 bg-background text-foreground"
+                />
+                <Button type="submit" variant="gold" disabled={upgrading} className="w-full h-12 rounded-xl text-base">
                   {upgrading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -270,25 +272,74 @@ const Settings = () => {
                   )}
                 </Button>
                 <p className="text-center text-xs text-primary-foreground/60 mt-3">
-                  Secure Stripe Checkout. One payment. No subscription.
+                  Secure Stripe Checkout. One payment. No subscription. No password to remember.
                 </p>
-              </div>
+              </form>
+
+              {restoreForm}
             </div>
           )}
         </div>
 
-        <div className="bg-card rounded-2xl p-6 shadow-card border border-border">
-          <h2 className="font-heading text-xl font-semibold text-destructive mb-3 flex items-center gap-2">
-            <Shield className="w-5 h-5" /> Account
-          </h2>
-          <Button
-            variant="destructive"
-            onClick={signOut}
-            className="rounded-xl"
-          >
-            Sign Out
-          </Button>
+        <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-3">
+          <h2 className="font-heading text-xl font-semibold text-card-foreground">Your saved data</h2>
+          <p className="text-sm text-muted-foreground">
+            Your garden, photos, journal, and lesson progress are stored only in this browser. Download a
+            backup to keep a copy or to move them to another device.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={backup} className="rounded-xl">
+              <Download className="w-4 h-4 mr-2" /> Download backup
+            </Button>
+            <Button type="button" variant="outline" onClick={() => fileInput.current?.click()} className="rounded-xl">
+              <Upload className="w-4 h-4 mr-2" /> Load a backup
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(event) => void restoreBackup(event.target.files?.[0])}
+            />
+          </div>
         </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-3">
+          <h2 className="font-heading text-xl font-semibold text-card-foreground">Watering reminders</h2>
+          <p className="text-sm text-muted-foreground">
+            Overdue plants are listed in the app whenever you open the dashboard or care calendar.
+            A browser notification is optional and only appears while this site is open in this browser,
+            at most once a day for each overdue plant. Nothing is emailed.
+          </p>
+          {remindersOn ? (
+            <Button type="button" variant="outline" onClick={disableReminders} className="rounded-xl">
+              Turn off browser notifications
+            </Button>
+          ) : (
+            <Button type="button" variant="hero" onClick={enableReminders} className="rounded-xl">
+              Allow browser notifications
+            </Button>
+          )}
+        </div>
+
+        {isPro && (
+          <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-3">
+            <h2 className="font-heading text-xl font-semibold text-card-foreground flex items-center gap-2">
+              <Shield className="w-5 h-5" /> This device
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Use this on a shared computer. It removes Pro from this browser only. Your purchase stays
+              active and can be restored by email. Saved plants stay in this browser.
+            </p>
+            <Button type="button" variant="outline" onClick={signOut} className="rounded-xl">
+              Remove Pro from this browser
+            </Button>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground text-center">
+          <Link to="/privacy" className="underline">Privacy</Link> · <Link to="/terms" className="underline">Terms</Link>
+        </p>
       </div>
     </AppLayout>
   );
