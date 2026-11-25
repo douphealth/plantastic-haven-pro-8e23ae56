@@ -13,6 +13,20 @@ export type StoredLicense = {
 
 export type ApiResult<T> = { data: T | null; error: string | null; status: number; code?: string };
 
+// Same rule the Worker applies (worker/src/index.ts EMAIL_RE), so the form never
+// sends an address the API will reject.
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
+
+/** Returns an error message for the email field, or null when it is usable. */
+export function emailProblem(value: string, emptyMessage: string): string | null {
+  const email = value.trim();
+  if (!email) return emptyMessage;
+  if (email.length > 254 || !EMAIL_RE.test(email.toLowerCase())) {
+    return "That email address does not look right. Check it and try again.";
+  }
+  return null;
+}
+
 export async function postApi<T>(path: string, body: unknown): Promise<ApiResult<T>> {
   try {
     const response = await fetch(path, {
@@ -75,7 +89,11 @@ export async function revalidateLicense(force = false): Promise<StoredLicense | 
 }
 
 export async function startCheckout(email: string) {
-  return postApi<{ url: string }>("/api/checkout", { email });
+  const result = await postApi<{ url: string }>("/api/checkout", { email: email.trim() });
+  if (result.data && !/^https:\/\//.test(result.data.url || "")) {
+    return { data: null, error: "Stripe did not return a checkout page. Please try again.", status: result.status };
+  }
+  return result;
 }
 
 export async function verifyCheckout(sessionId: string) {
@@ -87,7 +105,7 @@ export async function verifyCheckout(sessionId: string) {
 }
 
 export async function requestRestore(email: string) {
-  return postApi<{ ok: boolean }>("/api/restore", { email });
+  return postApi<{ ok: boolean }>("/api/restore", { email: email.trim() });
 }
 
 export async function confirmRestore(token: string) {
