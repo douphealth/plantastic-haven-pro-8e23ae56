@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/shared/AppLayout";
 import { Crown, Check, Loader2, ExternalLink, Download, Upload, Mail, Shield } from "lucide-react";
 import { REMINDER_PREFERENCE_KEY } from "@/lib/reminders";
-import { requestRestore, startCheckout } from "@/lib/proAccess";
+import { emailProblem, requestRestore, startCheckout } from "@/lib/proAccess";
 import { exportLocalData, importLocalData } from "@/lib/localDb";
 
 const PRO_FEATURES = [
@@ -27,10 +27,24 @@ const Settings = () => {
   const [checkoutEmail, setCheckoutEmail] = useState("");
   const [restoreEmail, setRestoreEmail] = useState("");
   const [upgrading, setUpgrading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoreSent, setRestoreSent] = useState(false);
   const [rechecking, setRechecking] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const checkoutEmailInput = useRef<HTMLInputElement>(null);
+  const restoreEmailInput = useRef<HTMLInputElement>(null);
+
+  // Coming back from Stripe with the browser's Back button restores this page from the
+  // back/forward cache with the button still spinning. Reset it so the user can retry.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setUpgrading(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
   const [remindersOn, setRemindersOn] = useState(
     () => localStorage.getItem(REMINDER_PREFERENCE_KEY) === "on"
   );
@@ -49,8 +63,18 @@ const Settings = () => {
     }
   }, [searchParams, toast]);
 
+  // The forms use noValidate: the browser's own "Please fill out this field" bubble is
+  // easy to miss and made "Unlock Pro" look dead. Problems are shown inline instead.
   const handleUpgrade = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (upgrading) return;
+    const problem = emailProblem(checkoutEmail, "Enter your email to continue. It is how you restore Pro later.");
+    if (problem) {
+      setCheckoutError(problem);
+      checkoutEmailInput.current?.focus();
+      return;
+    }
+    setCheckoutError(null);
     setUpgrading(true);
     const result = await startCheckout(checkoutEmail);
     if (result.data?.url) {
@@ -58,20 +82,31 @@ const Settings = () => {
       return;
     }
     setUpgrading(false);
-    if (result.code === "ALREADY_PRO") setRestoreSent(true);
-    toast({
-      title: result.code === "ALREADY_PRO" ? "You already have Pro" : "Checkout did not start",
-      description: result.error || "Please try again.",
-      variant: result.code === "ALREADY_PRO" ? "default" : "destructive",
-    });
+    if (result.code === "ALREADY_PRO") {
+      setRestoreSent(true);
+      toast({ title: "You already have Pro", description: result.error || undefined });
+      return;
+    }
+    const message = result.error || "Checkout did not start. Please try again.";
+    setCheckoutError(message);
+    toast({ title: "Checkout did not start", description: message, variant: "destructive" });
   };
 
   const handleRestore = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (restoring) return;
+    const problem = emailProblem(restoreEmail, "Enter the email you used at checkout.");
+    if (problem) {
+      setRestoreError(problem);
+      restoreEmailInput.current?.focus();
+      return;
+    }
+    setRestoreError(null);
     setRestoring(true);
     const result = await requestRestore(restoreEmail);
     setRestoring(false);
     if (result.error) {
+      setRestoreError(result.error);
       toast({ title: "Could not send the link", description: result.error, variant: "destructive" });
       return;
     }
@@ -152,22 +187,33 @@ const Settings = () => {
       If that email has a Pro purchase, a link to unlock it is on its way. Open it in this browser. It works for one hour.
     </div>
   ) : (
-    <form onSubmit={handleRestore} className="space-y-2">
+    <form onSubmit={handleRestore} noValidate className="space-y-2">
       <Label htmlFor="restore-email">Already bought Pro? Restore it on this device</Label>
       <div className="flex gap-2">
         <Input
+          ref={restoreEmailInput}
           id="restore-email"
           type="email"
-          required
+          inputMode="email"
           autoComplete="email"
           placeholder="Email used at checkout"
           value={restoreEmail}
-          onChange={(event) => setRestoreEmail(event.target.value)}
+          aria-invalid={restoreError ? true : undefined}
+          aria-describedby={restoreError ? "restore-email-error" : undefined}
+          onChange={(event) => {
+            setRestoreEmail(event.target.value);
+            if (restoreError) setRestoreError(null);
+          }}
         />
         <Button type="submit" variant="outline" disabled={restoring} className="rounded-xl shrink-0">
-          {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : "Email me a link"}
+          {restoring ? <Loader2 className="w-4 h-4 animate-spin" aria-label="Sending" /> : "Email me a link"}
         </Button>
       </div>
+      {restoreError && (
+        <p id="restore-email-error" role="alert" className="text-sm text-destructive">
+          {restoreError}
+        </p>
+      )}
     </form>
   );
 
@@ -226,6 +272,8 @@ const Settings = () => {
 
               <form
                 onSubmit={handleUpgrade}
+                noValidate
+                aria-busy={upgrading}
                 className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground"
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -249,15 +297,31 @@ const Settings = () => {
                   Your email (used to restore Pro on other devices)
                 </Label>
                 <Input
+                  ref={checkoutEmailInput}
                   id="checkout-email"
                   type="email"
-                  required
+                  inputMode="email"
                   autoComplete="email"
                   placeholder="you@example.com"
                   value={checkoutEmail}
-                  onChange={(event) => setCheckoutEmail(event.target.value)}
-                  className="mt-1.5 mb-4 bg-background text-foreground"
+                  aria-invalid={checkoutError ? true : undefined}
+                  aria-describedby={checkoutError ? "checkout-email-error" : undefined}
+                  onChange={(event) => {
+                    setCheckoutEmail(event.target.value);
+                    if (checkoutError) setCheckoutError(null);
+                  }}
+                  className="mt-1.5 bg-background text-foreground"
                 />
+                {checkoutError && (
+                  <p
+                    id="checkout-email-error"
+                    role="alert"
+                    className="mt-2 rounded-lg bg-background px-3 py-2 text-sm font-medium text-destructive"
+                  >
+                    {checkoutError}
+                  </p>
+                )}
+                <div className="mb-4" />
                 <Button type="submit" variant="gold" disabled={upgrading} className="w-full h-12 rounded-xl text-base">
                   {upgrading ? (
                     <>

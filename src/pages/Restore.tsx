@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, Loader2, AlertTriangle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { confirmRestore, requestRestore } from "@/lib/proAccess";
+import { confirmRestore, emailProblem, requestRestore } from "@/lib/proAccess";
 
 type State = "form" | "sent" | "confirming" | "done" | "failed";
 
@@ -22,6 +22,7 @@ const Restore = () => {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const emailInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -50,6 +51,13 @@ const Restore = () => {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (busy) return;
+    const problem = emailProblem(email, "Enter the email you used at checkout.");
+    if (problem) {
+      setMessage(problem);
+      emailInput.current?.focus();
+      return;
+    }
     setBusy(true);
     const result = await requestRestore(email);
     setBusy(false);
@@ -117,21 +125,31 @@ const Restore = () => {
                     <Link to="/dashboard" className="text-primary underline">Open the dashboard</Link>.
                   </p>
                 ) : (
-                  <form onSubmit={submit} className="space-y-3 text-left">
+                  <form onSubmit={submit} noValidate className="space-y-3 text-left">
                     <p className="text-muted-foreground text-sm text-center">
                       There are no passwords. Enter the email you used at checkout and we will email you a
                       one-hour link that unlocks Pro in this browser.
                     </p>
                     <Label htmlFor="email">Email used at checkout</Label>
                     <Input
+                      ref={emailInput}
                       id="email"
                       type="email"
-                      required
+                      inputMode="email"
                       autoComplete="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      aria-invalid={message ? true : undefined}
+                      aria-describedby={message ? "restore-error" : undefined}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        if (message) setMessage("");
+                      }}
                     />
-                    {message && <p className="text-sm text-destructive">{message}</p>}
+                    {message && (
+                      <p id="restore-error" role="alert" className="text-sm text-destructive">
+                        {message}
+                      </p>
+                    )}
                     <Button type="submit" variant="hero" disabled={busy} className="w-full rounded-xl">
                       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Email me a link"}
                     </Button>
