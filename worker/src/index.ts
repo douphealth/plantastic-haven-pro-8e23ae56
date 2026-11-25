@@ -197,6 +197,9 @@ async function checkout(request: Request, env: Env) {
     "payment_intent_data[metadata][app]": meta.app,
     "payment_intent_data[metadata][entitlement]": meta.entitlement,
     "payment_intent_data[description]": "PlantasticHaven Pro (lifetime)",
+    // The Stripe account is shared by several brands, so its public name is not this site's.
+    // Show the brand on this Checkout page only.
+    "branding_settings[display_name]": "PlantasticHaven",
   });
   if (!session.url) return fail("Stripe did not return a checkout page. Please try again.", 502);
   return json({ url: session.url });

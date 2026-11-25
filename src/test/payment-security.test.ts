@@ -75,6 +75,10 @@ describe("payment and entitlement security invariants", () => {
     expect(app).toContain("<PremiumRoute>");
   });
 
+  it("brands Checkout as PlantasticHaven, not the shared Stripe account's name", () => {
+    expect(read("worker/src/index.ts")).toContain('"branding_settings[display_name]": "PlantasticHaven"');
+  });
+
   it("does not pretend to send care-sequence email", () => {
     const source = read("src/pages/EmailSequences.tsx");
     expect(source).toContain("Nothing here sends email");
